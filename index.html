@@ -202,15 +202,35 @@ const store={mode:null,col:null,dl:null,
  }
 };
 const memStore={},memFiles={};
-let RIC=[];let DICT=null,SAMPLE=null,dictOff=false,voiceCtl=null,voicePending=null;
+let COLL=null;let RIC=[];let DICT=null,SAMPLE=null,dictOff=false,voiceCtl=null,voicePending=null;
 const MIC=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+/* Riconoscimento vocale: dettatura di Claude se disponibile, altrimenti quello del browser (Chrome, Safari) */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let SINK=null;
 function initDict(){
  if(!DICT)return;
- DICT.onPartial(({text})=>{const p=$('#vpart');if(p)p.textContent=text});
- DICT.onFinal(({text})=>{const t=$('#vtxt');if(!t)return;t.value=(t.value?t.value+text:text.replace(/^\s+/,''));const p=$('#vpart');if(p)p.textContent=''});
- DICT.onState(({state,reason})=>{const b=$('#vmic');if(b){const on=state!=='idle';b.classList.toggle('pri',on);b.innerHTML=MIC+(on?' Stop':' Detta')}
-  if(state==='idle'&&reason){const er=$('#err');if(['not_granted'].includes(reason)){dictOff=true;b&&b.remove();er&&(er.textContent='Microfono non autorizzato: puoi scrivere o usare il microfono della tastiera.')}else if(reason==='unavailable'){dictOff=true;b&&b.remove()}else if(['rate_limited','upstream_error'].includes(reason)&&er)er.textContent='Dettatura interrotta, riprova tra poco.'}});
+ DICT.onPartial(({text})=>{SINK&&SINK.partial(text)});
+ DICT.onFinal(({text})=>{SINK&&SINK.final(text)});
+ DICT.onState(({state,reason})=>{if(state==='idle')speech.active=false;if(state==='idle'&&(reason==='not_granted'||reason==='unavailable'))dictOff=true;SINK&&SINK.state(state,reason)});
 }
+const speech={active:false,_rec:null,_want:false,_restarts:0,
+ kind(){return DICT&&!dictOff?'claude':(SR?'web':null)},
+ isActive(){return this.kind()==='claude'?!!(DICT&&DICT.active()):this.active},
+ start(sink){SINK=sink;const k=this.kind();
+  if(!k)return Promise.reject({code:'unavailable'});
+  if(k==='claude'){this.active=true;return DICT.start({language:'it'}).catch(e=>{this.active=false;if(e&&(e.code==='not_granted'||e.code==='unavailable'))dictOff=true;throw e})}
+  this._want=true;this.active=true;this._restarts=0;
+  try{this._web()}catch(e){this.active=false;this._want=false;return Promise.reject({code:'upstream_error'})}
+  sink.state('listening');return Promise.resolve()},
+ _web(){const r=new SR();r.lang='it-IT';r.interimResults=true;r.continuous=!/Android/i.test(navigator.userAgent);r.maxAlternatives=1;
+  r.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal){if(t.trim())SINK&&SINK.final(' '+t.trim())}else interim+=t}SINK&&SINK.partial(interim);this._restarts=0};
+  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){this._want=false;this._reason='not_granted'}else if(e.error==='audio-capture'){this._want=false;this._reason='upstream_error'}};
+  r.onend=()=>{if(this._want&&this._restarts<50){this._restarts++;setTimeout(()=>{if(!this._want)return this._stopped('stopped');try{this._web()}catch(e){this._stopped('upstream_error')}},200)}else this._stopped(this._reason||'stopped')};
+  this._reason=null;this._rec=r;r.start()},
+ _stopped(reason){if(!this.active)return;this.active=false;this._rec=null;SINK&&SINK.state('idle',reason)},
+ async stop(){if(this.kind()==='claude'){if(DICT&&DICT.active())await DICT.stop().catch(()=>{});return}
+  this._want=false;if(this._rec){try{this._rec.stop()}catch(e){this._stopped('stopped')}}else this._stopped('stopped')}
+};
 
 /* ================== Stato ================== */
 const S={eventi:[],view:'loading',meta:null,key:null,clients:{},raw:{},cur:null,tab:'anag',q:'',filtro:'Tutti',ord:'nome',err:'',status:'',statusCls:''};
@@ -253,9 +273,9 @@ async function lock(){
  await flush();
  // ricarica i dati cifrati aggiornati, poi cancella la memoria in chiaro
  try{S.raw=await store.loadAll()}catch(e){}
- closeVoice();S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
+ if(COLL)await collClose();closeVoice();S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
 }
-setInterval(()=>{if(S.key&&Date.now()-lastAct>LOCK_MIN*60000)lock()},20000);
+setInterval(()=>{if(S.key&&!COLL&&Date.now()-lastAct>LOCK_MIN*60000)lock()},20000);
 ['pointerdown','keydown','scroll'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
 
 function setStatus(t,c){S.status=t;S.statusCls=c||'';const el=$('#st');if(el){el.textContent=t;el.className='status '+(c||'')}}
@@ -406,7 +426,7 @@ function tabBody(){
  if(t==='int')return `<p class="note" style="margin:10px 2px 0">Le parole chiave servono ad abbinare il cliente agli eventi pubblici importati (squadre, località, manifestazioni, artisti…).</p>${arrBlock('int','Aggiungi passione')}${arrBlock('ric','Aggiungi ricorrenza')}`;
  if(t==='ban')return arrBlock('ban','Aggiungi rapporto');
  if(t==='cop')return`<div id="live">${liveSummary()}</div>${arrBlock('cop','Aggiungi copertura')}`;
- if(t==='note')return arrBlock('note','Aggiungi nota');
+ if(t==='note')return `<div class="row" style="margin-top:14px"><button class="btn pri" data-a="coll">${CHAT_ICO} ${c.bozzaColl?'Riprendi colloquio in corso':'Avvia colloquio'}</button></div>`+arrBlock('note','Aggiungi nota');
  if(t==='doc')return docsBody();
  if(t==='ana')return anaBody();
 }
@@ -428,7 +448,7 @@ function anaBody(){
 }
 function renderClient(){
  const c=S.cur;
- $('#app').innerHTML=topbar(`<span id="ttl">${esc(fullName(c))}</span>`,`<button class="btn ico" data-a="back" title="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn ico" data-a="voice" title="Inserimento vocale" aria-label="Inserimento vocale">${MIC}</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+
+ $('#app').innerHTML=topbar(`<span id="ttl">${esc(fullName(c))}</span>`,`<button class="btn ico" data-a="back" title="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn ico" data-a="coll" title="Colloquio" aria-label="Avvia colloquio">${CHAT_ICO}</button><button class="btn ico" data-a="voice" title="Inserimento vocale" aria-label="Inserimento vocale">${MIC}</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+
  `<div class="wrap"><div class="tabs">${TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-a="tab" data-k="${k}">${l}</button>`).join('')}</div><div id="tab">${tabBody()}</div></div>`;
 }
 function rerenderTab(){const y=scrollY;$('#tab').innerHTML=tabBody();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.k===S.tab));scrollTo(0,y)}
@@ -455,6 +475,8 @@ document.addEventListener('click',async e=>{
  if(a==='new'){newClient();setTimeout(()=>{const n=document.querySelector('[data-f="nome"]');n&&n.focus()},60);return}
  if(a==='newvoice'){newClient();voiceBox(true);return}
  if(a==='voice')return voiceBox(false);
+ if(a==='coll')return collBox();
+ if(a==='collclose')return collClose();
  if(a==='auguri'){const c=S.clients[b.dataset.id];const x=ricorrenze([c],366).find(r=>r.kind==='bday');if(x)return openRic(x);return waBox(c,{title:'Auguri di <em>compleanno</em>',intro:esc(fullName(c))+'.',tplKey:true,key:'bday:'+new Date().getFullYear(),make:t=>getTpl(t).replace(/\{nome\}/g,c.nome||''),ai:'il suo compleanno'})}
  if(a==='ric')return openRic(RIC[+b.dataset.k]);
  if(a==='evmsg')return openEv(b.dataset.ev,b.dataset.id);
@@ -521,7 +543,7 @@ const V_SCALAR=[...F.anag,...F.lav];
 const V_ARR=['fam','int','ric','az','att','pas','ban','cop'];
 function specLine(f){const[k,l,t='text',o]=f;return`  ${k}: ${l}`+(t==='sel'?` — una tra: ${o.filter(x=>x!=='—').join(' | ')}`:t==='num'?' — numero':t==='date'?' — data AAAA-MM-GG':t==='bool'?' — true/false':'')}
 function voiceBox(isNew){
- const mic=DICT&&!dictOff;
+ const mic=!!speech.kind();
  $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Inserimento <em>vocale</em></h2>
  <p class="note" style="margin:8px 0 10px">${mic?'Tocca <b>Detta</b> e parla liberamente.':'Tocca il campo e usa il <b>microfono della tastiera</b> del telefono per dettare.'} ${isNew?'Inizia con nome e cognome del cliente.':'Le informazioni verranno aggiunte alla scheda di <b>'+esc(fullName(S.cur))+'</b>.'}</p>
  <textarea id="vtxt" style="min-height:150px" placeholder="Es.: ${isNew?'Mario Rossi, nato il 10 maggio 1975, imprenditore, ':''}sposato con Anna, due figli a carico, mutuo di 150 mila euro con Intesa con rata di 900 euro, conto titoli Fineco da 80 mila, reddito netto 60 mila l'anno…"></textarea>
@@ -529,12 +551,15 @@ function voiceBox(isNew){
  <div class="row" style="margin-top:8px">${mic?`<button class="btn" id="vmic">${MIC} Detta</button>`:''}<span class="grow"></span><button class="btn ghost" data-a="vclose">Chiudi</button><button class="btn pri" id="vgo">${SAMPLE?'Compila la scheda':'Salva come nota'}</button></div>
  <div class="err" id="err"></div><div id="vres"></div></div></div>`;
  const b=$('#vmic');
- if(b)b.onclick=()=>{$('#err').textContent='';if(DICT.active()){DICT.stop().catch(()=>{});return}
-  DICT.start({language:'it'}).catch(e=>{const er=$('#err');if(!er)return;if(e.code==='not_granted'){dictOff=true;b.remove();er.textContent='Microfono non autorizzato: puoi scrivere o usare il microfono della tastiera.'}else if(e.code==='unavailable'){dictOff=true;b.remove();er.textContent='Dettatura non disponibile qui: usa il microfono della tastiera.'}else if(e.code!=='stopped'&&e.code!=='dismissed')er.textContent='Dettatura non riuscita, riprova.'})};
+ const vsink={partial:t=>{const p=$('#vpart');if(p)p.textContent=t;lastAct=Date.now()},final:t=>{const x=$('#vtxt');if(!x)return;x.value=x.value?x.value+t:t.replace(/^\s+/,'');const p=$('#vpart');if(p)p.textContent='';lastAct=Date.now()},
+  state:(st,reason)=>{const bb=$('#vmic');if(bb){const on=st!=='idle';bb.classList.toggle('pri',on);bb.innerHTML=MIC+(on?' Stop':' Detta')}
+   const er=$('#err');if(st==='idle'&&er){if(reason==='not_granted'){bb&&bb.remove();er.textContent='Microfono non autorizzato: consenti il microfono nelle impostazioni del browser oppure usa il microfono della tastiera.'}else if(reason==='unavailable'){bb&&bb.remove();er.textContent='Dettatura non disponibile qui: usa il microfono della tastiera.'}else if(reason==='upstream_error'||reason==='rate_limited')er.textContent='Dettatura interrotta, riprova.'}}};
+ if(b)b.onclick=()=>{$('#err').textContent='';if(speech.isActive()){speech.stop();return}
+  speech.start(vsink).catch(e=>{vsink.state('idle',e&&e.code==='not_granted'?'not_granted':e&&e.code==='unavailable'?'unavailable':(e&&['stopped','dismissed'].includes(e.code)?'stopped':'upstream_error'))})};
  $('#vgo').onclick=runVoice;
  if(!mic)setTimeout(()=>$('#vtxt')&&$('#vtxt').focus(),80);
 }
-function closeVoice(){if(DICT&&DICT.active())DICT.stop().catch(()=>{});if(voiceCtl){voiceCtl.abort();voiceCtl=null}voicePending=null;closeModal()}
+function closeVoice(){if(speech.isActive())speech.stop();if(voiceCtl){voiceCtl.abort();voiceCtl=null}voicePending=null;closeModal()}
 function cleanRow(fields,src){const out={};if(!src||typeof src!=='object')return out;
  for(const[k,,t='text',o]of fields){let v=src[k];if(v==null||v==='')continue;
   if(t==='num'){v=typeof v==='number'?v:num(v);if(!isFinite(v))continue}
@@ -578,7 +603,7 @@ function parseExtract(out,txt,noteLbl){
 async function runVoice(){
  const txt=($('#vtxt').value||'').trim(),er=$('#err'),res=$('#vres');er.textContent='';
  if(!txt){er.textContent='Detta o scrivi qualcosa prima.';return}
- if(DICT&&DICT.active())await DICT.stop().catch(()=>{});
+ if(speech.isActive())await speech.stop();
  const fullTxt=($('#vtxt').value||'').trim();
  if(!SAMPLE){voicePending={campi:{},rows:{},extra:'',txt:fullTxt,noteLbl:'Salva il testo nel diario'};showVoicePreview();return}
  const c=S.cur;const go=$('#vgo');go.disabled=true;
@@ -609,6 +634,7 @@ function showVoicePreview(){
 }
 function applyVoice(){
  const P=voicePending,c=S.cur;if(!P||!c)return;
+ if(P.coll){delete c.bozzaColl;COLL=null}
  Object.assign(c,P.campi);
  let n=Object.keys(P.campi).length;
  V_ARR.forEach(k=>{(c[k]=c[k]||[]).push(...P.rows[k]);n+=P.rows[k].length});
@@ -725,6 +751,54 @@ function eventiBox(){
  document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=async()=>{S.eventi=S.eventi.filter(e=>e.id!==b.dataset.ev);await saveEventi();eventiBox();if(S.view==='list')renderList()});
  if($('#epast'))$('#epast').onclick=async()=>{S.eventi=S.eventi.filter(e=>daysTo(e.data)>=0);await saveEventi();eventiBox();if(S.view==='list')renderList()};
 }
+
+/* ================== Colloquio: trascrizione continua ================== */
+const CHAT_ICO=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>`;
+function fmtDur(ms){const m=Math.floor(ms/60000),x=Math.floor(ms/1000)%60;return m+':'+String(x).padStart(2,'0')}
+function collMs(){return COLL?COLL.elapsed+(COLL.since?Date.now()-COLL.since:0):0}
+function collDraft(now){if(!COLL)return;const t=$('#ctxt');const testo=t?t.value:'';
+ const go=()=>{if(!COLL)return;const c=COLL.c;if(!testo.trim()&&!c.bozzaColl)return;c.bozzaColl={testo,ms:collMs(),data:today()};markDirty(c)};
+ clearTimeout(COLL.saveT);if(now)go();else COLL.saveT=setTimeout(go,15000)}
+async function wake(on){try{if(on&&navigator.wakeLock&&!COLL.wake)COLL.wake=await navigator.wakeLock.request('screen');if(!on&&COLL&&COLL.wake){await COLL.wake.release();COLL.wake=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&COLL&&COLL.run){COLL.wake=null;wake(true)}});
+function collBox(){
+ const c=S.cur;if(!c)return;const bz=c.bozzaColl;const k=speech.kind();
+ COLL={c,elapsed:bz?bz.ms||0:0,since:null,timer:null,wake:null,saveT:null,run:false};
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Colloquio con <em>${esc(fullName(c))}</em></h2>
+ <p class="note" style="margin:6px 0 10px">${k?'Appoggia il telefono sul tavolo tra te e il cliente e tocca <b>Avvia</b>: la conversazione viene trascritta mentre parlate. Puoi mettere in pausa e correggere il testo in ogni momento.':'Il riconoscimento vocale non è disponibile in questo browser: tocca il campo qui sotto e usa il <b>microfono della tastiera</b>.'}${bz?' <b>Hai un colloquio non concluso del '+fmtD(bz.data)+': riprende da dove eri rimasto.</b>':''}</p>
+ <label class="fld chk" style="padding-top:0"><input type="checkbox" id="ccons" ${bz?'checked':''}>Il cliente è informato e acconsente alla trascrizione</label>
+ ${k?`<div class="row" style="margin:12px 0 6px;align-items:center"><button class="btn pri" id="cbtn" style="padding:12px 22px;font-size:16px">${MIC} Avvia</button><span id="ctime" style="font-family:'Playfair Display',serif;font-size:22px;color:var(--gold2)">${fmtDur(COLL.elapsed)}</span><span class="sub" id="cst"></span></div>`:''}
+ <textarea id="ctxt" style="min-height:230px;font-size:14.5px" placeholder="La trascrizione compare qui…">${esc(bz?bz.testo:'')}</textarea>
+ <div id="cpart" class="sub" style="min-height:18px;font-style:italic"></div>
+ <div class="err" id="err"></div>
+ <div class="row" style="margin-top:8px"><button class="btn ghost" data-a="collclose">Chiudi</button><span class="grow"></span><button class="btn" id="cnote">Salva solo nel diario</button>${SAMPLE?'<button class="btn pri" id="cend">Termina e compila scheda</button>':''}</div>
+ <div id="vres"></div></div></div>`;
+ const tx=$('#ctxt');tx.oninput=()=>collDraft();
+ const sink={partial:t=>{const p=$('#cpart');if(p)p.textContent=t;lastAct=Date.now()},
+  final:t=>{const x=$('#ctxt');if(!x)return;const atEnd=x.scrollTop+x.clientHeight>=x.scrollHeight-30;x.value=x.value?x.value+t:t.replace(/^\s+/,'');if(atEnd)x.scrollTop=x.scrollHeight;const p=$('#cpart');if(p)p.textContent='';lastAct=Date.now();collDraft()},
+  state:(st,reason)=>{if(!COLL)return;const b=$('#cbtn'),cs=$('#cst');
+   if(st==='listening'&&!COLL.run){COLL.run=true;COLL.since=Date.now();COLL.timer=setInterval(()=>{const t=$('#ctime');if(t)t.textContent=fmtDur(collMs())},1000);wake(true)}
+   if(st==='idle'&&COLL.run){COLL.run=false;COLL.elapsed=collMs();COLL.since=null;clearInterval(COLL.timer);wake(false);collDraft(true)}
+   if(b)b.innerHTML=MIC+(st==='idle'?(COLL.elapsed?' Riprendi':' Avvia'):' Pausa');if(b)b.classList.toggle('pri',st==='idle');
+   if(cs)cs.textContent=st==='listening'?'● In ascolto':st==='starting'?'Avvio…':st==='finishing'?'Chiusura…':'';
+   const er=$('#err');if(st==='idle'&&er){if(reason==='not_granted')er.textContent='Microfono non autorizzato: consenti il microfono nelle impostazioni del browser per questo sito.';else if(reason==='unavailable')er.textContent='Riconoscimento vocale non disponibile: usa il microfono della tastiera.';else if(reason==='hidden')er.textContent='Trascrizione in pausa perché lo schermo si è spento o hai cambiato app: tocca Riprendi.';else if(reason==='upstream_error'||reason==='rate_limited')er.textContent='Trascrizione interrotta: tocca Riprendi.';else er.textContent=''}}};
+ COLL.sink=sink;
+ if($('#cbtn'))$('#cbtn').onclick=()=>{const er=$('#err');er.textContent='';
+  if(!$('#ccons').checked){er.textContent='Prima conferma che il cliente è informato e acconsente.';return}
+  if(speech.isActive()){speech.stop();return}
+  speech.start(sink).catch(e=>sink.state('idle',e&&e.code==='not_granted'?'not_granted':e&&e.code==='unavailable'?'unavailable':'upstream_error'))};
+ $('#cnote').onclick=async()=>{const t=await collStopText();if(t==null)return;const c=COLL.c;
+  (c.note=c.note||[]).push({data:today(),testo:collHeader()+'\n\n'+t});delete c.bozzaColl;markDirty(c);COLL=null;closeModal();if(S.view==='client')rerenderTab();toast('Colloquio salvato nel diario')};
+ if($('#cend'))$('#cend').onclick=async()=>{const t=await collStopText();if(t==null)return;const go=$('#cend'),er=$('#err'),res=$('#vres');go.disabled=true;
+  res.innerHTML=`<p class="note" style="margin-top:12px">Claude sta leggendo il colloquio… <button class="btn sm ghost" id="vstop">Annulla</button></p>`;
+  voiceCtl=new AbortController();$('#vstop').onclick=()=>voiceCtl&&voiceCtl.abort();
+  try{const out=await SAMPLE.json(extractPrompt(`Trascrizione automatica di un colloquio tra il consulente e il cliente/prospect (le voci non sono distinte e possono esserci errori di trascrizione):\n"""\n${t.slice(0,120000)}\n"""\nIn "extra" scrivi una sintesi del colloquio in 3-6 righe: esigenze espresse, obiettivi, preoccupazioni e prossimi passi concordati.`,'detto chiaramente nel colloquio riguardo al cliente e alla sua famiglia'),{signal:voiceCtl.signal});
+   voiceCtl=null;if(!$('#vres'))return;voicePending=parseExtract(out,collHeader()+'\n\n'+t,'Salva la trascrizione completa nel diario');voicePending.coll=true;showVoicePreview();go.disabled=false}
+  catch(e){voiceCtl=null;go.disabled=false;if(!$('#vres'))return;res.innerHTML='';er.textContent=e&&e.code==='cancelled'?'':e&&e.code==='rate_limited'?'Limite di utilizzo raggiunto: usa Salva solo nel diario.':'Elaborazione non riuscita: puoi salvare il testo nel diario.'}};
+}
+function collHeader(){return`Colloquio del ${todayIT()}${COLL&&collMs()>30000?' (durata '+Math.round(collMs()/60000)+' min)':''}`}
+async function collStopText(){if(speech.isActive())await speech.stop();await new Promise(r=>setTimeout(r,300));const t=($('#ctxt')&&$('#ctxt').value||'').trim();if(!t){$('#err').textContent='Nessun testo da salvare.';return null}return t}
+async function collClose(){if(!COLL)return closeModal();if(speech.isActive())await speech.stop();if(COLL){clearInterval(COLL.timer);await wake(false);collDraft(true)}COLL=null;closeModal();if(S.view==='client')rerenderTab()}
 
 /* ================== Importa scheda da testo ================== */
 function pasteBox(){
