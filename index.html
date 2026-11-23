@@ -285,7 +285,7 @@ async function lock(){
  await flush();
  // ricarica i dati cifrati aggiornati, poi cancella la memoria in chiaro
  try{S.raw=await store.loadAll()}catch(e){}
- if(COLL)await collClose();closeVoice();INBOX=null;CF=null;S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
+ if(COLL)await collClose();closeVoice();INBOX=null;CF=null;S.key=null;setTimeout(()=>toast('Sei uscito: i dati restano cifrati'),50);S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
 }
 setInterval(()=>{if(S.key&&!COLL&&Date.now()-lastAct>LOCK_MIN*60000)lock()},20000);
 ['pointerdown','keydown','scroll'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
@@ -377,7 +377,7 @@ function renderList(){
  const q=S.q.toLowerCase();
  let rows=cl.filter(c=>(S.filtro==='Tutti'||(c.stato||'Prospect')===S.filtro)&&(!q||[c.nome,c.cognome,c.cf,c.email,c.tel,...(c.az||[]).map(a=>a.ragione)].join(' ').toLowerCase().includes(q)));
  rows.sort(S.ord==='netto'?(a,b)=>an[b.id].netto-an[a.id].netto:S.ord==='upd'?(a,b)=>(b.updated||0)-(a.updated||0):(a,b)=>fullName(a).localeCompare(fullName(b),'it'));
- $('#app').innerHTML=topbar('Archivio <em>Clienti</em>','',`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn sm" data-a="backup">Backup</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+`<div class="wrap">
+ $('#app').innerHTML=topbar('Archivio <em>Clienti</em>','',`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn sm" data-a="backup">Backup</button><button class="btn sm" data-a="lock" title="Esci dall'archivio" aria-label="Esci"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg> Esci</button>`)+`<div class="wrap">
  ${modeBanner()}
  <div class="kpis">
   <div class="card kpi"><div class="k">Anagrafiche</div><div class="v">${cl.length}</div></div>
@@ -1013,7 +1013,7 @@ const fmtK=k=>eur(k*1000);
 const fmtPct=p=>String(p).replace('.',',')+'%';
 function renderCF(){
  const L=[...CF.consulenti].map(c=>({c,R:calcCF(c)})).sort((a,b)=>b.R.bonus-a.R.bonus);const tot=L.reduce((s,x)=>s+x.R.bonus,0);
- $('#app').innerHTML=topbar('Incentivazione <em>CF 2026</em>',`<button class="btn ico" data-a="cfback" title="Indietro" aria-label="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span>`)+`<div class="wrap">
+ $('#app').innerHTML=topbar('Incentivazione <em>CF 2026</em>',`<button class="btn ico" data-a="cfback" title="Indietro" aria-label="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn sm" data-a="lock" aria-label="Esci"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg> Esci</button>`)+`<div class="wrap">
  <div class="kpis"><div class="card kpi"><div class="k">Consulenti</div><div class="v">${L.length}</div></div><div class="card kpi"><div class="k">Bonus maturando totale</div><div class="v">${eur(tot)}</div></div><div class="card kpi"><div class="k">Media per consulente</div><div class="v">${eur(L.length?tot/L.length:0)}</div></div><div class="card kpi"><div class="k">Con maggiorazioni</div><div class="v">${L.filter(x=>x.R.pct>0).length}</div></div></div>
  <button class="card gold" data-a="emrep" style="display:flex;width:100%;align-items:center;gap:12px;margin-top:12px;text-align:left;color:var(--text);cursor:pointer"><span class="grow"><span style="font-size:11px;letter-spacing:.18em;color:var(--gold)">EXECUTIVE MANAGER</span><br><b style="font-family:'Playfair Display',serif;font-size:18px">Bonus <em style="color:var(--gold)">EM 2026</em></b><br><span class="sub">${emReady()?'Bonus maturando '+eur(calcEM().totale):'Inserisci gli obiettivi della Scheda MBO'}</span></span><span style="color:var(--gold);font-size:22px">›</span></button>
  <div class="row" style="margin-top:14px"><button class="btn pri grow" data-a="cfedit">+ Consulente</button><button class="btn grow" data-a="cfpaste">Incolla da Excel</button></div>
@@ -1296,7 +1296,7 @@ function menuBox(c){
   <button class="btn pri" id="m_claude" style="margin-top:6px">Invia a Claude</button>
   <button class="btn" id="m_dup">Duplica come nuova scheda</button>
   <button class="btn del" id="m_del">Elimina scheda</button>
-  ${inCli?`<button class="btn ghost" id="m_lock">Blocca archivio</button>`:''}
+  ${inCli?`<button class="btn" id="m_lock"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg> Esci dall'archivio</button>`:''}
  </div><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
  if($('#m_edit'))$('#m_edit').onclick=()=>{closeModal();S.cur=c;S.tab='anag';S.view='client';setStatus('');render();scrollTo(0,0)};
  document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{c.stato=b.dataset.st;markDirty(c);closeModal();toast('Scheda impostata come '+c.stato);if(S.view==='client')rerenderTab();else renderList()});
