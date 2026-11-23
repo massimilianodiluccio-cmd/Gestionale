@@ -975,17 +975,17 @@ function bonusPista(vK,P){ // vK in k€ → bonus in €
  const f=fasciaDi(vK,P);return vK*1000*f.aliq/100;
 }
 function calcCF(c,Pin){
- const P=Pin||CF.params;const rn=num(c.rn),revo=num(c.revo),ass=num(c.ass);
+ const P0=Pin||CF.params;const P=Object.assign({},P0,{fasce:(P0.fasceCl&&P0.fasceCl[c.cluster])||P0.fasce});const rn=num(c.rn),revo=num(c.revo),ass=num(c.ass);
  const accesso=P.fasce[0].da;
  const bRN=bonusPista(rn,P);let bEVO=bonusPista(revo,P);const neg=rn<0;if(neg)bEVO*=1-P.ridNeg/100;
  const ok20=rn>=accesso&&(revo>=rn||(revo>=P.revoAlt&&rn>=P.rnAlt));const ok10=ass>=P.assSoglia;
  const pct=(ok20?P.m20:0)+(ok10?P.m10:0);
  const base=bRN+bEVO;const lordo=P.cumulo==='prodotto'?base*(1+(ok20?P.m20/100:0))*(1+(ok10?P.m10/100:0)):base*(1+pct/100);
  const capA=(P.cap[c.cluster]||P.cap['PTF 20-50 mln'])[c.opPart?1:0];const bonus=Math.min(lordo,capA);
- return{rn,revo,ass,bRN,bEVO,neg,ok20,ok10,pct,base,lordo,cap:capA,bonus,capped:lordo>capA,fRN:fasciaDi(rn,P),fEVO:fasciaDi(revo,P)};
+ return{P,rn,revo,ass,bRN,bEVO,neg,ok20,ok10,pct,base,lordo,cap:capA,bonus,capped:lordo>capA,fRN:fasciaDi(rn,P),fEVO:fasciaDi(revo,P)};
 }
 function cfHints(c){
- const P=CF.params,R=calcCF(c),H=[];
+ const R=calcCF(c),P=R.P,H=[];
  const next=v=>P.fasce.find(f=>f.da>v);
  for(const[k,lab]of [['rn','Raccolta netta'],['revo','Raccolta evoluta']]){const v=R[k];const n=next(v);if(!n)continue;const gap=n.da-v;
   const sim=calcCF(Object.assign({},c,{[k]:n.da}));const delta=sim.bonus-R.bonus;
@@ -1004,7 +1004,7 @@ function renderCF(){
  <div class="row" style="margin-top:14px"><button class="btn pri grow" data-a="cfedit">+ Consulente</button><button class="btn grow" data-a="cfpaste">Incolla da Excel</button></div>
  <div class="row" style="margin-top:8px"><button class="btn sm" data-a="cfteam">Report di squadra</button><button class="btn sm" data-a="cfparams">Parametri di calcolo</button></div>
  <div class="lbl">Consulenti finanziari</div>
- ${L.length?L.map(({c,R},i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div class="av">${i+1}</div><span class="grow"><b class="nm">${esc(c.nome||'Consulente')}</b><div class="sub">${esc(c.cluster||'')} · dati al ${fmtD(c.data)}</div></span><span style="text-align:right"><b style="font-family:'Playfair Display',serif;font-size:19px;color:var(--gold2)">${eur(R.bonus)}</b><div class="sub">bonus maturando</div></span></div>
+ ${L.length?L.map(({c,R},i)=>`<div class="card" style="margin-bottom:10px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div class="av">${i+1}</div><span class="grow"><b class="nm">${esc(c.nome||'Consulente')}</b><div class="sub">${c.cod?'Cod. '+esc(c.cod)+' · ':''}${esc(c.cluster||'')} · dati al ${fmtD(c.data)}</div></span><span style="text-align:right"><b style="font-family:'Playfair Display',serif;font-size:19px;color:var(--gold2)">${eur(R.bonus)}</b><div class="sub">bonus maturando</div></span></div>
   <div class="sum" style="margin-top:10px"><div><b>${fmtK(R.rn)}</b><span>Raccolta netta${R.fRN?' · '+fmtPct(R.fRN.aliq):''}</span></div><div><b>${fmtK(R.revo)}</b><span>Raccolta evoluta${R.fEVO?' · '+fmtPct(R.fEVO.aliq):''}</span></div><div><b>${fmtK(R.ass)}</b><span>RN assicurativa</span></div></div>
   <div class="row" style="gap:6px;margin:6px 0 8px">${R.ok20?`<span class="badge g">+${CF.params.m20}% evoluta</span>`:''}${R.ok10?`<span class="badge g">+${CF.params.m10}% assicurativa</span>`:''}${R.neg?'<span class="badge r">RN negativa: evoluta -50%</span>':''}${R.capped?'<span class="badge r">al tetto massimo</span>':''}</div>
   <div class="row"><button class="btn sm pri" data-a="cfrep" data-id="${c.id}">Report individuale</button><button class="btn sm" data-a="cfedit" data-id="${c.id}">Modifica</button></div></div>`).join(''):'<div class="card"><div class="empty" style="padding:4px 0">Nessun consulente. Aggiungili uno alla volta o incolla l\'elenco da Excel.</div></div>'}
@@ -1047,16 +1047,26 @@ function cfParams(){
  const P=CF.params;
  $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Parametri <em>di calcolo</em></h2>
  <div class="lbl">Fasce (Raccolta netta e evoluta)</div>
- ${P.fasce.map((f,i)=>`<div class="row" style="flex-wrap:nowrap;margin-bottom:6px"><label class="fld" style="flex:1">Da (migliaia €)<input data-fda="${i}" inputmode="decimal" value="${f.da}"></label><label class="fld" style="flex:1">Aliquota %<input data-fal="${i}" inputmode="decimal" value="${String(f.aliq).replace('.',',')}"></label></div>`).join('')}
+ <label class="fld" style="margin-bottom:8px">Fasce per<select id="p_fcl"><option value="">Tutti i cluster (fasce comuni)</option>${CLUSTERS.map(k=>`<option value="${k}">${k}${P.fasceCl&&P.fasceCl[k]?' · personalizzate':''}</option>`).join('')}</select></label>
+ <div id="p_frows"></div>
  <label class="fld" style="margin-top:6px">Metodo di calcolo<select id="p_met"><option value="fascia" ${P.metodo==='fascia'?'selected':''}>Aliquota della fascia raggiunta su tutta la raccolta</option><option value="scaglioni" ${P.metodo==='scaglioni'?'selected':''}>Per scaglioni (ogni parte con la sua aliquota)</option></select></label>
  <div class="lbl">Maggiorazioni</div>
  <div class="grid"><label class="fld">Evoluta ≥ netta (%)<input id="p_m20" inputmode="decimal" value="${P.m20}"></label><label class="fld">Oppure evoluta da (migliaia €)<input id="p_ra" inputmode="decimal" value="${P.revoAlt}"></label><label class="fld">…con netta da (migliaia €)<input id="p_rn" inputmode="decimal" value="${P.rnAlt}"></label><label class="fld">RN assicurativa (%)<input id="p_m10" inputmode="decimal" value="${P.m10}"></label><label class="fld">Soglia RN assicurativa (migliaia €)<input id="p_as" inputmode="decimal" value="${P.assSoglia}"></label><label class="fld">Riduzione evoluta se RN negativa (%)<input id="p_neg" inputmode="decimal" value="${P.ridNeg}"></label>
  <label class="fld">Più maggiorazioni<select id="p_cum"><option value="somma" ${P.cumulo==='somma'?'selected':''}>Si sommano (+20% e +10% = +30%)</option><option value="prodotto" ${P.cumulo==='prodotto'?'selected':''}>Si moltiplicano (×1,20 ×1,10)</option></select></label></div>
  <div class="lbl">Tetto bonus per cluster (€)</div>
  ${CLUSTERS.map(k=>`<div class="row" style="flex-wrap:nowrap;margin-bottom:6px"><label class="fld" style="flex:1">${k}<input data-cap0="${k}" inputmode="numeric" value="${P.cap[k][0]}"></label><label class="fld" style="flex:1">Con operazioni particolari<input data-cap1="${k}" inputmode="numeric" value="${P.cap[k][1]}"></label></div>`).join('')}
- <p class="sub">Valori iniziali dalla slide BG Premium 2026. Le fasce si applicano a tutti i cluster: aggiornale se per altri cluster sono diverse.</p>
+ <p class="sub">Valori iniziali dalla slide BG Premium 2026 (cluster PTF 20-50 mln). Puoi impostare fasce diverse per ogni cluster con il selettore “Fasce per”.</p>
  <div class="row" style="margin-top:10px"><button class="btn sm ghost" id="p_rst">Ripristina valori della slide</button><span class="grow"></span><button class="btn ghost" data-a="modalclose">Annulla</button><button class="btn pri" id="p_ok">Salva</button></div></div></div>`;
- $('#p_ok').onclick=async()=>{P.fasce=P.fasce.map((f,i)=>({da:num($(`[data-fda="${i}"]`).value),aliq:num($(`[data-fal="${i}"]`).value)})).sort((a,b)=>a.da-b.da);
+ P.fasceCl=P.fasceCl||{};let curCl='';
+ const rowsOf=cl=>(cl&&P.fasceCl[cl])||P.fasce;
+ const drawF=()=>{const FA=rowsOf(curCl);$('#p_frows').innerHTML=FA.map((f,i)=>`<div class="row" style="flex-wrap:nowrap;margin-bottom:6px"><label class="fld" style="flex:1">Da (migliaia €)<input data-fda="${i}" inputmode="decimal" value="${String(f.da).replace('.',',')}"></label><label class="fld" style="flex:1">Aliquota %<input data-fal="${i}" inputmode="decimal" value="${String(f.aliq).replace('.',',')}"></label><button class="btn ico ghost" data-fdel="${i}" aria-label="Elimina fascia" style="align-self:flex-end">✕</button></div>`).join('')+`<div class="row"><button class="btn sm" id="p_fadd">+ Fascia</button>${curCl&&P.fasceCl[curCl]?'<button class="btn sm ghost" id="p_freset">Usa le fasce comuni</button>':''}</div>${curCl&&!P.fasceCl[curCl]?'<p class="sub" style="margin-top:6px">Questo cluster usa le fasce comuni: modificale qui per renderle specifiche.</p>':''}`;
+  document.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{const FA2=readF();FA2.splice(+b.dataset.fdel,1);writeF(FA2);drawF()});
+  $('#p_fadd').onclick=()=>{const FA2=readF();FA2.push({da:(FA2.length?FA2[FA2.length-1].da:0)+1000,aliq:0});writeF(FA2);drawF()};
+  if($('#p_freset'))$('#p_freset').onclick=()=>{delete P.fasceCl[curCl];drawF()}};
+ const readF=()=>[...document.querySelectorAll('[data-fda]')].map((el,i)=>({da:num(el.value),aliq:num($(`[data-fal="${i}"]`).value)}));
+ const writeF=FA=>{FA=FA.filter(f=>f.da>0||f.aliq>0).sort((a,b)=>a.da-b.da);if(!curCl)P.fasce=FA;else if(JSON.stringify(FA)!==JSON.stringify(P.fasce))P.fasceCl[curCl]=FA;else delete P.fasceCl[curCl]};
+ drawF();$('#p_fcl').onchange=()=>{writeF(readF());curCl=$('#p_fcl').value;drawF()};
+ $('#p_ok').onclick=async()=>{writeF(readF());if(!P.fasce.length){toast('Serve almeno una fascia');return}
   P.metodo=$('#p_met').value;P.m20=num($('#p_m20').value);P.revoAlt=num($('#p_ra').value);P.rnAlt=num($('#p_rn').value);P.m10=num($('#p_m10').value);P.assSoglia=num($('#p_as').value);P.ridNeg=num($('#p_neg').value);P.cumulo=$('#p_cum').value;
   CLUSTERS.forEach(k=>{P.cap[k]=[num($(`[data-cap0="${k}"]`).value),num($(`[data-cap1="${k}"]`).value)]});await cfSave();closeModal();renderCF();toast('Parametri aggiornati')};
  $('#p_rst').onclick=()=>confirmBox('Ripristinare i parametri della slide?',async()=>{CF.params=cfDefaults();await cfSave();renderCF()});
@@ -1071,10 +1081,10 @@ table{border-collapse:collapse;width:100%}th,td{border:1px solid #e2d6c3;padding
 .pr{position:fixed;right:14px;bottom:14px;background:#7d0c1e;color:#fff;border:1px solid #C9A26B;border-radius:999px;padding:10px 16px;font:600 14px Arial}
 @media print{.pr{display:none}.band{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
 function cfReportHTML(c){
- const P=CF.params,R=calcCF(c),H=cfHints(c);
+ const R=calcCF(c),P=R.P,H=cfHints(c);
  const riga=(lab,v,f,b)=>`<tr><td>${lab}</td><td class="n">${fmtK(v)}</td><td>${f?'da '+fmtK(f.da):'sotto soglia ('+fmtK(P.fasce[0].da)+')'}</td><td class="n">${f?fmtPct(f.aliq):'–'}</td><td class="n">${eur(b)}</td></tr>`;
  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – ${esc(c.nome)}</title><style>${REP_CSS}</style></head><body>
- <div class="band"><div class="k">INCENTIVAZIONE 2026 · REPORT INDIVIDUALE</div><h1>${esc(c.nome)}</h1><div>${esc(c.cluster)} · dati di raccolta al ${fmtD(c.data)}</div></div><div class="in">
+ <div class="band"><div class="k">INCENTIVAZIONE 2026 · REPORT INDIVIDUALE</div><h1>${esc(c.nome)}</h1><div>${c.cod?'Cod. '+esc(c.cod)+' · ':''}${esc(c.cluster)} · dati di raccolta al ${fmtD(c.data)}</div></div><div class="in">
  <div class="big"><div><b>${eur(R.bonus)}</b>Bonus maturando</div><div><b>${fmtK(R.rn)}</b>Raccolta netta</div><div><b>${fmtK(R.revo)}</b>Raccolta evoluta</div></div>
  <h2>Bonus per pista</h2><table><tr><th>Pista</th><th>Raccolta</th><th>Fascia raggiunta</th><th>Aliquota</th><th>Bonus</th></tr>
  ${riga('Raccolta netta',R.rn,R.fRN,R.bRN)}${riga('Raccolta evoluta'+(R.neg?' (ridotta del '+P.ridNeg+'%: RN negativa)':''),R.revo,R.fEVO,R.bEVO)}
@@ -1115,8 +1125,8 @@ function cfTeam(){
  repBox('Riepilogo di <em>squadra</em>',html,'Incentivazione_2026_squadra_'+today()+'.html');
 }
 async function mergeCF(pay){
- let n=0,u=0;for(const x of (pay.consulenti||[])){if(!x||!x.nome)continue;const vals={cluster:CLUSTERS.includes(x.cluster)?x.cluster:'PTF 20-50 mln',rn:String(x.rn??''),revo:String(x.revo??''),ass:String(x.ass??''),data:x.data||today(),opPart:!!x.opPart};
-  const ex=CF.consulenti.find(c=>c.nome.toLowerCase()===String(x.nome).toLowerCase());if(ex){Object.assign(ex,vals);if(x.note)ex.note=x.note;u++}else{CF.consulenti.push({id:'cf'+uid(),nome:String(x.nome),note:x.note||'',...vals});n++}}
+ let n=0,u=0;for(const x of (pay.consulenti||[])){if(!x||!x.nome)continue;const vals={cod:String(x.cod??''),cluster:CLUSTERS.includes(x.cluster)?x.cluster:'PTF 20-50 mln',rn:String(x.rn??''),revo:String(x.revo??''),ass:String(x.ass??''),data:x.data||today(),opPart:!!x.opPart};
+  const lc=v=>String(v||'').toLowerCase().trim();const ex=CF.consulenti.find(c=>x.cod&&c.cod&&String(c.cod)===String(x.cod))||CF.consulenti.find(c=>lc(c.nome)===lc(x.nome))||CF.consulenti.find(c=>x.alias&&lc(c.nome)===lc(x.alias));if(ex){Object.assign(ex,vals);ex.nome=String(x.nome);if(x.note)ex.note=x.note;u++}else{CF.consulenti.push({id:'cf'+uid(),nome:String(x.nome),note:x.note||'',...vals});n++}}
  await cfSave();if(S.view==='cf')renderCF();
  return `Incentivazione CF 2026: ${n} consulenti aggiunti${u?', '+u+' aggiornati':''}`;
 }

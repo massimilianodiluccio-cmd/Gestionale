@@ -36,6 +36,6 @@ I documenti arrivano dall'app con "Condividi" (sezione Documenti).
 
 ## Incentivazione CF 2026 (sezione dell'app)
 Dati dei consulenti della rete (raccolta in migliaia di euro) e report individuali dei bonus maturandi.
-Per consegnare dati all'app: JSON `{"tipo":"cf","consulenti":[{"nome","cluster":"PTF 20-50 mln","rn","revo","ass","data":"AAAA-MM-GG","opPart":false,"note"}]}`
+Per consegnare dati all'app: JSON `{"tipo":"cf","consulenti":[{"cod","nome","alias (nome precedente, facoltativo)","cluster":"PTF 20-50 mln","rn","revo","ass","data":"AAAA-MM-GG","opPart":false,"note"}]}`
 con `node tools/consegna.mjs`; i consulenti con lo stesso nome vengono aggiornati. Cluster ammessi: PTF sotto 20 mln,
 PTF 20-50 mln, PTF 50-150 mln, PTF oltre 150 mln. Parametri (fasce, maggiorazioni, tetti) modificabili nell'app.
