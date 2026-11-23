@@ -1,0 +1,7 @@
+ARCHIVIO CLIENTI - app per Vercel
+
+Contenuto: index.html (l'app), manifest e icone (installazione sul telefono), sw.js (apertura anche offline), vercel.json (impostazioni di sicurezza).
+
+Pubblicazione: carica tutti i file così come sono nella radice di un repository GitHub, poi su vercel.com > Add New > Project > Import del repository > Deploy (nessuna impostazione da cambiare: è un sito statico).
+
+I dati dei clienti NON stanno su Vercel: restano cifrati con la tua password nel dispositivo su cui usi l'app. Vercel ospita solo il programma.

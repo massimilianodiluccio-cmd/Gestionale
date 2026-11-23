@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Archivio Clienti – Gestionale</title>
+<meta name="theme-color" content="#151517">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Archivio">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap">
+<style>
+:root{--bg:#18191c;--bg2:#1f2024;--card:#25272c;--line:#383a40;--gold:#C9A26B;--gold2:#e2c595;--bord:#7d0c1e;--bord2:#C8102E;--text:#f3f1ec;--mut:#a7a39c;--ok:#7fb48a;--warn:#e0a458;--bad:#e06c6c}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif}
+body{min-height:100vh}
+h1,h2,h3{font-family:"Playfair Display",Georgia,serif;font-weight:600;margin:0}
+h1 em,h2 em{color:var(--gold);font-style:italic}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:980px;margin:0 auto;padding:0 14px 90px}
+.top{position:sticky;top:0;z-index:5;background:linear-gradient(115deg,var(--bord) 0,var(--bord2) 28%,var(--bg2) 28.2%);border-bottom:1px solid var(--line);padding:12px 14px}
+.top .in{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.top h1{font-size:20px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px;margin:22px 0 10px}
+.lbl:before,.lbl:after{content:"";height:1px;background:var(--gold);opacity:.45;flex:1}
+.lbl:before{max-width:24px}
+.btn{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.pri{background:linear-gradient(135deg,var(--bord),var(--bord2));border-color:var(--gold);color:#fff;font-weight:600}
+.btn.sm{padding:5px 11px;font-size:13px}
+.btn.ghost{border-color:transparent;color:var(--mut)}
+.btn.del{color:var(--bad);border-color:#5a2a2a}
+.ico{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;border-radius:50%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card.gold{border-color:rgba(201,162,107,.55)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.kpi .v{font-family:"Playfair Display",serif;font-size:22px;color:var(--gold2)}
+.kpi .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+input,select,textarea{width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:15px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+textarea{min-height:70px;resize:vertical}
+input[type=date]{color-scheme:dark}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 12px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+.fld.wide{grid-column:1/-1}
+.fld.chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--text);padding-top:18px}
+.fld.chk input{width:20px;height:20px;accent-color:var(--bord2)}
+.list .it{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border-bottom:0}
+.list .it:hover{background:#2b2d33}
+.av{width:40px;height:40px;border-radius:50%;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold);font-family:"Playfair Display",serif;flex:none}
+.nm{font-weight:600}
+.sub{font-size:12.5px;color:var(--mut)}
+.badge{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--mut);white-space:nowrap}
+.badge.g{border-color:var(--gold);color:var(--gold)}
+.badge.r{border-color:var(--bord2);color:#ff8f9f}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none;position:sticky;top:61px;background:var(--bg);z-index:4}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:999px;padding:7px 13px;font-size:13.5px;white-space:nowrap}
+.tab.on{color:#fff;border-color:var(--gold);background:linear-gradient(135deg,var(--bord),var(--bord2))}
+.rowcard{margin-bottom:10px;position:relative}
+.rowcard .x{position:absolute;top:8px;right:8px}
+.rowcard .grid{margin-top:4px}
+.rowcard h3{font-size:15px;color:var(--gold2);margin:0 40px 6px 0;font-family:Inter,sans-serif;font-weight:600}
+.empty{color:var(--mut);font-size:14px;padding:6px 2px 12px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0 4px}
+.sum div{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.sum b{display:block;font-family:"Playfair Display",serif;font-size:18px;color:var(--gold2);font-weight:600}
+.sum span{font-size:11.5px;color:var(--mut)}
+.bar{height:8px;background:var(--bg2);border-radius:6px;overflow:hidden;margin:3px 0 9px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--bord2),var(--gold))}
+.opp{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.opp:last-child{border-bottom:0}
+.opp input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--bord2)}
+.opp b{display:block}
+.disc{font-size:11.5px;color:var(--mut);border-top:1px solid var(--line);margin-top:22px;padding-top:12px}
+.status{font-size:12px;color:var(--mut);white-space:nowrap}
+.status.ok{color:var(--ok)}.status.w{color:var(--warn)}.status.b{color:var(--bad)}
+.lock{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 0 0,rgba(200,16,46,.35),transparent 45%),var(--bg)}
+.lock .card{width:100%;max-width:400px;padding:26px}
+.lock h1{font-size:30px;margin:8px 0 6px}
+.note{font-size:13px;color:var(--mut)}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin-top:6px}
+.banner{background:#3a2a12;border:1px solid #6b4c1f;color:#f2d3a0;border-radius:10px;padding:9px 12px;font-size:13px;margin-top:12px}
+.banner.b{background:#3a1a1e;border-color:#7d2a33;color:#ffc2c9}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;z-index:50;padding:18px}
+.modal .card{max-width:420px;width:100%;max-height:92vh;overflow:auto}
+.modal .card.vb{max-width:600px}
+.chg{font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line)}
+.chg:last-child{border-bottom:0}
+.chg b{color:var(--gold2);font-weight:600}
+.btn svg{vertical-align:-3px}
+.agenda .a{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.agenda .a:last-child{border-bottom:0}
+.dt{font-size:12px;color:var(--gold);min-width:78px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card);border:1px solid var(--gold);border-radius:999px;padding:9px 16px;font-size:14px;z-index:60}
+.formula{font-size:13px;color:var(--mut);margin-top:6px}
+@media(max-width:600px){.top h1{font-size:18px}.hide-m{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<script>
+"use strict";
+/* ================== Configurazione campi ================== */
+const CATS=['Liquidità','Titoli e fondi','Gestioni patrimoniali','Polizze di investimento','Previdenza complementare','Immobili','Partecipazioni','Beni di valore','Altro'];
+const COPS=['TCM / Caso morte','Infortuni','Invalidità permanente da malattia','Long Term Care','Salute / rimborso spese','CPI su mutuo','Casa / incendio','RC capofamiglia','Tutela legale','Key man','Multirischi aziendale','RC professionale','Altro'];
+const F={
+ anag:[['nome','Nome'],['cognome','Cognome'],['stato','Stato','sel',['Prospect','Cliente','Ex cliente']],['nascita','Data di nascita','date'],['luogo','Luogo di nascita'],['cf','Codice fiscale'],['tel','Telefono'],['email','Email'],['indirizzo','Indirizzo','area'],['civile','Stato civile','sel',['—','Celibe/Nubile','Coniugato/a','Unito/a civilmente','Convivente','Separato/a','Divorziato/a','Vedovo/a']],['regime','Regime patrimoniale','sel',['—','Separazione dei beni','Comunione dei beni','Fondo patrimoniale']],['profilo','Profilo di rischio','sel',['—','Conservativo','Prudente','Bilanciato','Dinamico','Aggressivo']],['orizzonte','Orizzonte temporale','sel',['—','Breve (meno di 3 anni)','Medio (3-7 anni)','Lungo (oltre 7 anni)']],['esperienza','Conoscenza ed esperienza','sel',['—','Bassa','Media','Alta']],['prossimo','Prossimo contatto','date'],['obiettivi','Obiettivi ed esigenze','area']],
+ fam:[['nome','Nome'],['rel','Relazione','sel',['Coniuge','Convivente','Figlio/a','Genitore','Fratello/Sorella','Altro']],['nascita','Data di nascita','date'],['carico','A carico','bool'],['note','Note']],
+ lav:[['lavoro','Condizione lavorativa','sel',['—','Dipendente','Dirigente','Libero professionista','Lavoratore autonomo','Imprenditore','Pensionato','Altro']],['professione','Professione / ruolo'],['datore','Datore di lavoro'],['reddito','Reddito netto annuo (€)','num'],['altriRedditi','Altri redditi annui (€)','num'],['redditoFam','Reddito netto altri familiari (€)','num'],['spese','Spese mensili familiari (€)','num'],['tfr','TFR maturato (€)','num'],['prevObb','Previdenza obbligatoria / note','area']],
+ az:[['ragione','Ragione sociale'],['forma','Forma giuridica','sel',['—','Ditta individuale','SNC','SAS','SRL','SRLS','SPA','Studio associato','Altro']],['piva','Partita IVA'],['settore','Settore'],['ruolo','Ruolo','sel',['—','Titolare','Socio','Amministratore','Socio amministratore','Altro']],['quota','Quota (%)','num'],['fatturato','Fatturato (€)','num'],['utile','Utile (€)','num'],['dip','Dipendenti','num'],['tfm','TFM / TFR dipendenti (€)','num'],['note','Note','area']],
+ att:[['cat','Categoria','sel',CATS],['desc','Descrizione'],['ist','Istituto / ubicazione'],['valore','Valore (€)','num'],['note','Note']],
+ pas:[['tipo','Tipo','sel',['Mutuo','Prestito personale','Leasing','Fido','Finanziamento aziendale','Altro']],['ist','Istituto'],['residuo','Debito residuo (€)','num'],['rata','Rata mensile (€)','num'],['scad','Scadenza','date'],['note','Note']],
+ ban:[['ist','Istituto'],['tipo','Rapporto','sel',['Conto corrente','Deposito titoli','Conto deposito','Carta','Cassetta di sicurezza','Altro']],['intest','Intestazione','sel',['Personale','Cointestato','Aziendale']],['rif','Riferimento'],['note','Note']],
+ cop:[['tipo','Tipo','sel',COPS],['comp','Compagnia'],['num','N. polizza'],['assic','Assicurato'],['capitale','Capitale / massimale (€)','num'],['premio','Premio annuo (€)','num'],['scad','Scadenza','date'],['note','Note']],
+ note:[['data','Data','date'],['testo','Annotazione','area']],
+ int:[['cat','Categoria','sel',['Calcio','Altri sport','Vino ed enogastronomia','Cucina','Viaggi','Musica','Arte e cultura','Cinema e teatro','Lettura','Motori','Golf','Vela e nautica','Montagna e sci','Animali','Tecnologia','Moda e design','Volontariato','Altro']],['dett','Dettaglio (es. tifoso del Napoli)'],['tag','Parole chiave (es. Napoli, Serie A)'],['note','Note']],
+ ric:[['tipo','Ricorrenza','sel',['Anniversario di matrimonio','Onomastico','Laurea','Nascita figlio/nipote','Pensionamento','Anniversario aziendale','Altro']],['chi','Persona coinvolta'],['data','Data','date'],['annuale','Si ripete ogni anno','bool'],['note','Note']]
+};
+const TABS=[['anag','Anagrafica'],['fam','Famiglia'],['int','Passioni'],['lav','Lavoro e aziende'],['pat','Patrimonio'],['ban','Banche'],['cop','Coperture'],['doc','Documenti'],['note','Note'],['ana','Analisi']];
+const ARR_TITLES={fam:'Nucleo familiare',az:'Aziende e partecipazioni',att:'Attività',pas:'Passività',ban:'Rapporti bancari',cop:'Coperture assicurative in essere',note:'Diario',int:'Hobby e passioni',ric:'Ricorrenze personali'};
+const ROW_NAME={fam:r=>r.nome||r.rel||'Familiare',az:r=>r.ragione||'Azienda',att:r=>(r.cat||'Attività')+(r.desc?' · '+r.desc:''),pas:r=>(r.tipo||'Passività')+(r.ist?' · '+r.ist:''),ban:r=>(r.ist||'Istituto')+(r.tipo?' · '+r.tipo:''),cop:r=>(r.tipo||'Copertura')+(r.comp?' · '+r.comp:''),note:r=>r.data?fmtD(r.data):'Nota',int:r=>(r.cat||'Passione')+(r.dett?' · '+r.dett:''),ric:r=>(r.tipo||'Ricorrenza')+(r.chi?' · '+r.chi:'')+(r.data?' · '+fmtD(r.data):'')};
+const FIRMA='Massimiliano Di Luccio';
+const LOCK_MIN=10;
+
+/* ================== Utilità ================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const EUR=new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const eur=n=>EUR.format(Math.round(n||0));
+function num(v){if(v==null||v==='')return 0;if(typeof v==='number')return v;let s=String(v).replace(/[€\s]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');const n=parseFloat(s);return isNaN(n)?0:n}
+function fmtD(d){if(!d)return'';const[y,m,g]=d.split('-');return g?`${g}/${m}/${y}`:d}
+function today(){const d=new Date();return d.toISOString().slice(0,10)}
+function todayIT(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()}
+function age(d){if(!d)return null;const b=new Date(d),n=new Date();if(isNaN(b))return null;let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a}
+function daysTo(d){if(!d)return null;const t=new Date(d+'T00:00:00'),n=new Date(today()+'T00:00:00');return Math.round((t-n)/864e5)}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const fullName=c=>[c.cognome,c.nome].filter(Boolean).join(' ')||'Nuovo cliente';
+const initials=c=>((c.cognome||'?')[0]+(c.nome||'')[0]||'').toUpperCase();
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
+
+/* ================== Cifratura (AES-GCM + PBKDF2) ================== */
+const TE=new TextEncoder(),TD=new TextDecoder();
+const b64=u=>{let s='';const a=new Uint8Array(u);for(let i=0;i<a.length;i+=0x8000)s+=String.fromCharCode.apply(null,a.subarray(i,i+0x8000));return btoa(s)};
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function deriveKey(pw,salt){const base=await crypto.subtle.importKey('raw',TE.encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function encJSON(key,obj){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,TE.encode(JSON.stringify(obj)));return{iv:b64(iv),ct:b64(ct)}}
+async function decJSON(key,e){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(e.iv)},key,unb64(e.ct));return JSON.parse(TD.decode(pt))}
+
+/* ================== Archiviazione ================== */
+function idbOpen(){return new Promise((res,rej)=>{const q=indexedDB.open('archivio_clienti',1);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains('main'))d.createObjectStore('main');if(!d.objectStoreNames.contains('files'))d.createObjectStore('files')};q.onsuccess=()=>{try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}res(q.result)};q.onerror=()=>rej(q.error)})}
+function idbReq(d,store,mode,fn){return new Promise((res,rej)=>{const tx=d.transaction(store,mode);const q=fn(tx.objectStore(store));let out;q.onsuccess=()=>{out=q.result};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}
+function idbAll(d,store){return new Promise((res,rej)=>{const out={};const tx=d.transaction(store,'readonly');const q=tx.objectStore(store).openCursor();q.onsuccess=()=>{const c=q.result;if(c){out[c.key]=c.value;c.continue()}};tx.oncomplete=()=>res(out);tx.onerror=()=>rej(tx.error)})}
+/* salvataggio file: capacità downloads dentro Claude, link di download nell'app autonoma */
+async function saveFile(filename,data){
+ if(store.dl)return store.dl.save({filename,data});
+ const blob=data instanceof Blob?data:new Blob([data],{type:filename.endsWith('.json')?'application/json':filename.endsWith('.html')?'text/html':'application/octet-stream'});
+ const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);return{status:'saved'};
+}
+const LS='archivio_clienti_cf_v1';
+const store={mode:null,col:null,dl:null,
+ async init(){
+  let db=null,user=null,id=null;
+  try{if(window.claude&&claude.use){let dc,sm;[db,user,this.dl,dc,sm]=await Promise.all([claude.use('db'),claude.use('user'),claude.use('downloads'),claude.use('dictation').catch(()=>null),claude.use('sample').catch(()=>null)]);DICT=dc;SAMPLE=sm;if(user)id=await user.id();initDict()}}catch(e){}
+  if(db&&id){this.mode='cloud';this.col=db.collection('data/users/'+id);return}
+  if(!window.claude&&window.indexedDB){try{this.idb=await idbOpen();this.mode='idb';return}catch(e){}}
+  try{localStorage.setItem(LS+'_t','1');localStorage.removeItem(LS+'_t');this.mode='local'}catch(e){this.mode='mem'}
+ },
+ _local(){try{return JSON.parse(localStorage.getItem(LS)||'{}')}catch(e){return{}}},
+ async loadAll(){
+  if(this.mode==='cloud'){
+   const snap=await Promise.race([this.col.get(),new Promise((_,r)=>setTimeout(()=>r({code:'timeout'}),10000))]);
+   const out={};snap.docs.forEach(d=>{if(d.exists)out[d.id]=d.data()});return out;
+  }
+  if(this.mode==='local')return this._local();
+  if(this.mode==='idb')return idbAll(this.idb,'main');
+  return memStore;
+ },
+ async put(id,data){
+  if(this.mode==='cloud'){try{await this.col.doc(id).set(data)}catch(e){if(e&&e.code==='unavailable'){await new Promise(r=>setTimeout(r,800+Math.random()*700));await this.col.doc(id).set(data)}else throw e}return}
+  if(this.mode==='local'){const all=this._local();all[id]=data;localStorage.setItem(LS,JSON.stringify(all));return}
+  if(this.mode==='idb')return idbReq(this.idb,'main','readwrite',st=>st.put(data,id));
+  memStore[id]=data;
+ },
+ _fc(){return this.col.doc('filestore').collection('chunks')},
+ async putChunk(k,data){if(this.mode==='cloud'){await this._fc().doc(k).set(data);return}if(this.mode==='local'){localStorage.setItem(LS+'_f_'+k,JSON.stringify(data));return}if(this.mode==='idb')return idbReq(this.idb,'files','readwrite',st=>st.put(data,k));memFiles[k]=data},
+ async getChunk(k){if(this.mode==='cloud'){const d=await this._fc().doc(k).get();return d.exists?d.data():null}if(this.mode==='local'){const v=localStorage.getItem(LS+'_f_'+k);return v?JSON.parse(v):null}if(this.mode==='idb')return (await idbReq(this.idb,'files','readonly',st=>st.get(k)))||null;return memFiles[k]||null},
+ async delChunk(k){if(this.mode==='cloud'){await this._fc().doc(k).delete();return}if(this.mode==='local'){localStorage.removeItem(LS+'_f_'+k);return}if(this.mode==='idb')return idbReq(this.idb,'files','readwrite',st=>st.delete(k));delete memFiles[k]},
+ async del(id){
+  if(this.mode==='cloud'){await this.col.doc(id).delete();return}
+  if(this.mode==='local'){const all=this._local();delete all[id];localStorage.setItem(LS,JSON.stringify(all));return}
+  if(this.mode==='idb')return idbReq(this.idb,'main','readwrite',st=>st.delete(id));
+  delete memStore[id];
+ }
+};
+const memStore={},memFiles={};
+let RIC=[];let DICT=null,SAMPLE=null,dictOff=false,voiceCtl=null,voicePending=null;
+const MIC=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+function initDict(){
+ if(!DICT)return;
+ DICT.onPartial(({text})=>{const p=$('#vpart');if(p)p.textContent=text});
+ DICT.onFinal(({text})=>{const t=$('#vtxt');if(!t)return;t.value=(t.value?t.value+text:text.replace(/^\s+/,''));const p=$('#vpart');if(p)p.textContent=''});
+ DICT.onState(({state,reason})=>{const b=$('#vmic');if(b){const on=state!=='idle';b.classList.toggle('pri',on);b.innerHTML=MIC+(on?' Stop':' Detta')}
+  if(state==='idle'&&reason){const er=$('#err');if(['not_granted'].includes(reason)){dictOff=true;b&&b.remove();er&&(er.textContent='Microfono non autorizzato: puoi scrivere o usare il microfono della tastiera.')}else if(reason==='unavailable'){dictOff=true;b&&b.remove()}else if(['rate_limited','upstream_error'].includes(reason)&&er)er.textContent='Dettatura interrotta, riprova tra poco.'}});
+}
+
+/* ================== Stato ================== */
+const S={eventi:[],view:'loading',meta:null,key:null,clients:{},raw:{},cur:null,tab:'anag',q:'',filtro:'Tutti',ord:'nome',err:'',status:'',statusCls:''};
+let saveTimer=null;const dirty=new Set();let saving=Promise.resolve();let lastAct=Date.now();
+
+async function boot(){
+ render();
+ await store.init();
+ await loadVault();
+}
+async function loadVault(){
+ S.view='loading';render();
+ try{
+  const all=await store.loadAll();
+  S.raw=all;S.meta=all.meta||null;S.view=S.meta?'lock':'setup';
+ }catch(e){S.view='err';S.err=e&&e.code==='timeout'?'L\'archivio non risponde in questo momento.':'Impossibile aprire l\'archivio ('+(e&&e.code||'errore')+').'}
+ render();
+}
+async function doSetup(){
+ const p1=$('#pw1').value,p2=$('#pw2').value,er=$('#err');
+ if(p1.length<8){er.textContent='Usa almeno 8 caratteri.';return}
+ if(p1!==p2){er.textContent='Le due password non coincidono.';return}
+ er.textContent='Creazione archivio cifrato…';
+ const salt=crypto.getRandomValues(new Uint8Array(16));const key=await deriveKey(p1,salt);
+ const chk=await encJSON(key,{ok:'archivio-clienti'});
+ const meta={v:1,salt:b64(salt),...chk};
+ try{await store.put('meta',meta)}catch(e){er.textContent='Salvataggio non riuscito: riprova.';return}
+ S.meta=meta;S.key=key;S.clients={};S.view='list';render();
+}
+async function doUnlock(){
+ const pw=$('#pw').value,er=$('#err');er.textContent='Verifica…';
+ try{const key=await deriveKey(pw,unb64(S.meta.salt));await decJSON(key,S.meta);S.key=key}catch(e){er.textContent='Password errata.';return}
+ S.clients={};let bad=0;
+ for(const[id,v]of Object.entries(S.raw)){if(!id.startsWith('c_'))continue;try{const c=await decJSON(S.key,v);S.clients[c.id]=c}catch(e){bad++}}
+ if(bad)toast(bad+' schede non leggibili');
+ S.eventi=[];if(S.raw.eventi){try{S.eventi=(await decJSON(S.key,S.raw.eventi)).list||[]}catch(e){}}
+ lastAct=Date.now();S.view='list';render();
+}
+async function lock(){
+ await flush();
+ // ricarica i dati cifrati aggiornati, poi cancella la memoria in chiaro
+ try{S.raw=await store.loadAll()}catch(e){}
+ closeVoice();S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
+}
+setInterval(()=>{if(S.key&&Date.now()-lastAct>LOCK_MIN*60000)lock()},20000);
+['pointerdown','keydown','scroll'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
+
+function setStatus(t,c){S.status=t;S.statusCls=c||'';const el=$('#st');if(el){el.textContent=t;el.className='status '+(c||'')}}
+function touch(){if(!S.cur)return;S.cur.updated=Date.now();dirty.add(S.cur.id);setStatus('Modifiche in corso…','w');clearTimeout(saveTimer);saveTimer=setTimeout(flush,900)}
+function flush(){
+ clearTimeout(saveTimer);
+ saving=saving.then(async()=>{
+  const ids=[...dirty];dirty.clear();
+  for(const id of ids){const c=S.clients[id];if(!c||!S.key)continue;
+   try{const e=await encJSON(S.key,c);e.u=Date.now();await store.put('c_'+id,e);S.raw['c_'+id]=e;setStatus('Salvato ✓','ok')}
+   catch(err){dirty.add(id);setStatus(err&&err.code==='quota_exceeded'?'Spazio archivio esaurito':'Salvataggio non riuscito, riprovo…','b');clearTimeout(saveTimer);saveTimer=setTimeout(flush,5000)}}
+ });
+ return saving;
+}
+addEventListener('visibilitychange',()=>{if(document.hidden&&dirty.size)flush()});
+
+/* ================== Analisi ================== */
+function analizza(c){
+ const att=c.att||[],pas=c.pas||[],cop=c.cop||[],fam=c.fam||[],az=c.az||[];
+ const byCat={};CATS.forEach(k=>byCat[k]=0);att.forEach(a=>{byCat[a.cat||'Altro']=(byCat[a.cat||'Altro']||0)+num(a.valore)});
+ const totAtt=att.reduce((s,a)=>s+num(a.valore),0),totPas=pas.reduce((s,a)=>s+num(a.residuo),0),rate=pas.reduce((s,a)=>s+num(a.rata),0);
+ const netto=totAtt-totPas,liq=byCat['Liquidità'];
+ const fin=liq+byCat['Titoli e fondi']+byCat['Gestioni patrimoniali']+byCat['Polizze di investimento']+byCat['Previdenza complementare'];
+ const eta=age(c.nascita),aCarico=fam.filter(f=>f.carico).length;
+ const reddito=num(c.reddito),spese=num(c.spese),mesiLiq=spese>0?liq/spese:null;
+ const has=t=>cop.some(x=>x.tipo===t);
+ const capCop=t=>cop.filter(x=>x.tipo===t).reduce((s,x)=>s+num(x.capitale),0);
+ const anni=num(c.anniTCM)||5;
+ const tcmEs=capCop('TCM / Caso morte')+capCop('CPI su mutuo');
+ const fabb=totPas+reddito*anni;
+ const gap=Math.max(0,fabb-tcmEs);
+ const premi=cop.reduce((s,x)=>s+num(x.premio),0);
+ const autonomo=['Libero professionista','Lavoratore autonomo','Imprenditore'].includes(c.lavoro);
+ const O=[];const add=(k,t,d)=>O.push({k,t,d});
+ if((aCarico>0||totPas>0||['Coniugato/a','Unito/a civilmente','Convivente'].includes(c.civile))&&gap>0&&reddito+totPas>0)
+  add('tcm','Protezione caso morte (TCM)',`Fabbisogno stimato ${eur(fabb)} (debiti residui ${eur(totPas)} + ${anni} anni di reddito netto). Capitali già assicurati ${eur(tcmEs)}: scopertura indicativa ${eur(gap)}.`);
+ if(mesiLiq!==null&&mesiLiq>6)add('liq','Liquidità in eccesso',`La liquidità copre circa ${mesiLiq.toFixed(1).replace('.',',')} mesi di spese. Tenendo 6 mesi di riserva restano circa ${eur(liq-6*spese)} da valutare per investimento o piano di accumulo.`);
+ if(mesiLiq!==null&&mesiLiq<3)add('riserva','Riserva di emergenza',`La liquidità copre solo ${mesiLiq.toFixed(1).replace('.',',')} mesi di spese: valutare la costituzione di una riserva prima di nuovi investimenti.`);
+ if(autonomo&&!has('Infortuni')&&!has('Invalidità permanente da malattia'))add('inf','Infortuni e invalidità permanente','Reddito da lavoro autonomo senza coperture per infortuni o invalidità da malattia.');
+ if(c.lavoro==='Libero professionista'&&!has('RC professionale'))add('rcp','RC professionale','Nessuna RC professionale censita.');
+ if(eta!==null&&eta>=50&&!has('Long Term Care'))add('ltc','Long Term Care',`Età ${eta} anni senza copertura per la non autosufficienza.`);
+ if(eta!==null&&eta>=40&&!has('Salute / rimborso spese'))add('salute','Copertura salute','Nessuna polizza salute o rimborso spese mediche censita.');
+ if(eta!==null&&eta<62&&c.lavoro!=='Pensionato'&&!byCat['Previdenza complementare'])add('prev','Previdenza complementare','Nessuna posizione di previdenza complementare censita (possibile vantaggio fiscale sui contributi).');
+ if(az.some(a=>['Titolare','Socio','Socio amministratore','Amministratore'].includes(a.ruolo))&&!has('Key man'))add('keyman','Protezione aziendale (Key man)','Ruolo chiave in azienda senza copertura Key man.');
+ if(az.some(a=>num(a.dip)>0))add('welfare','TFR/TFM e welfare aziendale','Aziende con dipendenti: valutare accantonamento TFR/TFM e piani di welfare.');
+ if(byCat['Immobili']>0&&!has('Casa / incendio'))add('casa','Protezione casa e patrimonio immobiliare','Immobili censiti senza polizza casa/incendio.');
+ if(!has('RC capofamiglia')&&(aCarico>0||fam.length>0))add('rcf','RC capofamiglia','Nessuna RC capofamiglia censita.');
+ if(netto>=500000||(eta!==null&&eta>=60&&netto>=200000)||byCat['Partecipazioni']>0)add('succ','Pianificazione successoria e passaggio generazionale',`Patrimonio netto censito ${eur(netto)}${byCat['Partecipazioni']>0?', con partecipazioni societarie':''}.`);
+ cop.forEach((x,i)=>{const g=daysTo(x.scad);if(g!==null&&g>=0&&g<=90)add('scad'+i,'Copertura in scadenza: '+(x.tipo||''),`${x.comp||''} scade il ${fmtD(x.scad)} (tra ${g} giorni): occasione di revisione.`)});
+ return{byCat,totAtt,totPas,rate,netto,liq,fin,eta,aCarico,reddito,spese,mesiLiq,anni,tcmEs,fabb,gap,premi,O};
+}
+
+/* ================== Render ================== */
+function render(){
+ const a=$('#app');
+ if(S.view==='loading'){a.innerHTML=`<div class="lock"><div class="card gold"><div class="lbl">Archivio riservato</div><h1>Archivio <em>Clienti</em></h1><p class="note">Apertura dell'archivio in corso…</p></div></div>`;return}
+ if(S.view==='err'){a.innerHTML=`<div class="lock"><div class="card gold"><h1>Archivio <em>Clienti</em></h1><p class="note">${esc(S.err)}</p><button class="btn pri" data-a="retry">Riprova</button></div></div>`;return}
+ if(S.view==='setup'){a.innerHTML=`<div class="lock"><div class="card gold"><div class="lbl">Primo accesso</div><h1>Archivio <em>Clienti</em></h1>
+  <p class="note">Scegli una password. I dati vengono cifrati sul tuo dispositivo con questa password prima di essere salvati: <b style="color:var(--gold2)">se la dimentichi i dati non sono recuperabili</b>, da nessuno.</p>
+  ${modeBanner()}
+  <div class="grid" style="grid-template-columns:1fr;margin-top:14px"><label class="fld">Password<input id="pw1" type="password" autocomplete="new-password"></label><label class="fld">Ripeti password<input id="pw2" type="password" autocomplete="new-password"></label></div>
+  <div class="err" id="err"></div><button class="btn pri" data-a="setup" style="width:100%;margin-top:8px">Crea archivio cifrato</button></div></div>`;return}
+ if(S.view==='lock'){a.innerHTML=`<div class="lock"><div class="card gold"><div class="lbl">Archivio riservato</div><h1>Archivio <em>Clienti</em></h1><p class="note">Inserisci la password per aprire l'archivio.</p>
+  <form id="uf"><input id="pw" type="password" autocomplete="current-password" style="margin-top:12px" autofocus><div class="err" id="err"></div><button class="btn pri" style="width:100%;margin-top:8px">Apri</button></form>${modeBanner()}</div></div>`;
+  $('#uf').onsubmit=e=>{e.preventDefault();doUnlock()};setTimeout(()=>$('#pw')&&$('#pw').focus(),50);return}
+ if(S.view==='list')return renderList();
+ if(S.view==='client')return renderClient();
+}
+function modeBanner(){
+ if(store.mode==='cloud')return'';
+ if(store.mode==='idb')return S.view==='list'?`<div class="banner" style="background:#1f2a22;border-color:#3d5a44;color:#bfe0c6">Archivio salvato su questo dispositivo. Esegui un backup ogni tanto.</div>`:'';
+ if(store.mode==='local')return`<div class="banner">Archivio salvato solo in questo browser: esegui spesso il backup.</div>`;
+ return`<div class="banner b">Salvataggio non disponibile in questa vista: i dati andranno persi alla chiusura. Usa Backup per conservarli.</div>`;
+}
+function topbar(title,left,right){return`<div class="top"><div class="in">${left||''}<h1>${title}</h1>${right||''}</div></div>`}
+
+function renderList(){
+ const cl=Object.values(S.clients);const an={};cl.forEach(c=>an[c.id]=analizza(c));
+ const totNet=cl.reduce((s,c)=>s+an[c.id].netto,0);
+ const agenda=[];
+ cl.forEach(c=>{const g=daysTo(c.prossimo);if(g!==null&&g<=14)agenda.push({c,g,d:c.prossimo,t:'Contatto'+(g<0?' scaduto':'')});
+  (c.cop||[]).forEach(x=>{const g2=daysTo(x.scad);if(g2!==null&&g2>=-7&&g2<=90)agenda.push({c,g:g2,d:x.scad,t:'Scadenza '+(x.tipo||'polizza')})})});
+ agenda.sort((a,b)=>a.g-b.g);
+ const anno=new Date().getFullYear();
+ RIC=ricorrenze(cl,7);const OCC=occasioni(cl);
+ const q=S.q.toLowerCase();
+ let rows=cl.filter(c=>(S.filtro==='Tutti'||(c.stato||'Prospect')===S.filtro)&&(!q||[c.nome,c.cognome,c.cf,c.email,c.tel,...(c.az||[]).map(a=>a.ragione)].join(' ').toLowerCase().includes(q)));
+ rows.sort(S.ord==='netto'?(a,b)=>an[b.id].netto-an[a.id].netto:S.ord==='upd'?(a,b)=>(b.updated||0)-(a.updated||0):(a,b)=>fullName(a).localeCompare(fullName(b),'it'));
+ $('#app').innerHTML=topbar('Archivio <em>Clienti</em>','',`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn sm" data-a="backup">Backup</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+`<div class="wrap">
+ ${modeBanner()}
+ <div class="kpis">
+  <div class="card kpi"><div class="k">Anagrafiche</div><div class="v">${cl.length}</div></div>
+  <div class="card kpi"><div class="k">Patrimonio netto censito</div><div class="v">${eur(totNet)}</div></div>
+  <div class="card kpi"><div class="k">Opportunità rilevate</div><div class="v">${cl.reduce((s,c)=>s+an[c.id].O.length,0)}</div></div>
+  <div class="card kpi"><div class="k">In agenda</div><div class="v">${agenda.length}</div></div>
+ </div>
+ ${RIC.length?`<div class="lbl">Compleanni e ricorrenze</div><div class="card agenda">${RIC.map((x,k)=>{const done=x.c.contatti&&x.c.contatti[x.key];return`<div class="a" data-a="ric" data-k="${k}"><span class="dt">${fmtD(x.date).slice(0,5)}</span><span class="grow"><b>${esc(fullName(x.c))}</b><div class="sub">${esc(x.t)}${done?' · messaggio già aperto':''}</div></span>${x.g===0?`<span class="btn sm ${done?'':'pri'}">${done?'Riapri':'Scrivi'}</span>`:`<span class="badge g">tra ${x.g} gg</span>`}</div>`}).join('')}</div>`:''}
+ <div class="lbl">Occasioni da eventi pubblici</div>
+ ${OCC.length?OCC.map(o=>`<div class="card" style="margin-bottom:10px"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="dt" style="padding-top:2px">${fmtD(o.ev.data)}</span><span class="grow"><b>${esc(o.ev.titolo)}</b>${o.ev.desc?`<div class="sub">${esc(o.ev.desc)}</div>`:''}</span><span class="badge g">${o.g===0?'oggi':'tra '+o.g+' gg'}</span></div>
+ <div class="agenda" style="margin-top:6px">${o.m.map(m=>{const done=m.c.contatti&&m.c.contatti['ev:'+o.ev.id];return`<div class="a" data-a="evmsg" data-ev="${o.ev.id}" data-id="${m.c.id}"><span class="grow"><b>${esc(fullName(m.c))}</b><div class="sub">${esc([m.it.cat,m.it.dett].filter(Boolean).join(' · '))}${done?' · messaggio già aperto':''}</div></span><span class="btn sm ${done?'':'pri'}">${done?'Riapri':'Scrivi'}</span></div>`}).join('')}</div></div>`).join(''):`<div class="card"><div class="empty" style="padding:4px 0">${(S.eventi||[]).length?'Nessun evento dei prossimi 45 giorni abbinato alle passioni dei clienti.':'Nessun evento importato.'}</div></div>`}
+ <div class="row" style="margin-top:8px"><button class="btn sm" data-a="eventi">Gestisci e importa eventi${(S.eventi||[]).length?' ('+S.eventi.length+')':''}</button></div>
+ ${agenda.length?`<div class="lbl">Agenda e scadenze</div><div class="card agenda">${agenda.slice(0,12).map(x=>`<div class="a" data-a="open" data-id="${x.c.id}"><span class="dt">${fmtD(x.d)}</span><span class="grow"><b>${esc(fullName(x.c))}</b><div class="sub">${esc(x.t)}</div></span><span class="badge ${x.g<0?'r':'g'}">${x.g<0?Math.abs(x.g)+' gg fa':x.g===0?'oggi':'tra '+x.g+' gg'}</span></div>`).join('')}</div>`:''}
+ <div class="lbl">Clienti</div>
+ <div class="row" style="margin-bottom:10px"><input id="q" class="grow" placeholder="Cerca nome, codice fiscale, azienda…" value="${esc(S.q)}" style="min-width:180px;flex:1">
+  <select id="filtro" style="width:auto">${['Tutti','Prospect','Cliente','Ex cliente'].map(o=>`<option ${o===S.filtro?'selected':''}>${o}</option>`).join('')}</select>
+  <select id="ord" style="width:auto"><option value="nome" ${S.ord==='nome'?'selected':''}>A-Z</option><option value="netto" ${S.ord==='netto'?'selected':''}>Patrimonio</option><option value="upd" ${S.ord==='upd'?'selected':''}>Recenti</option></select>
+  <button class="btn" data-a="newvoice" title="Nuovo cliente da dettatura">${MIC} Detta</button><button class="btn pri" data-a="new">+ Nuovo</button></div>
+ <div class="card list" style="padding:0">${rows.length?rows.map(c=>{const A=an[c.id];return`<div class="it" data-a="open" data-id="${c.id}"><div class="av">${esc(initials(c))}</div><div class="grow"><div class="nm">${esc(fullName(c))}</div><div class="sub">${[A.eta!==null?A.eta+' anni':'',c.professione||c.lavoro&&c.lavoro!=='—'&&c.lavoro||'',(c.az||[])[0]?.ragione||''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div></div><div style="text-align:right"><div class="nm" style="color:var(--gold2)">${eur(A.netto)}</div><div class="row" style="justify-content:flex-end;gap:4px;margin-top:2px"><span class="badge ${c.stato==='Cliente'?'g':''}">${esc(c.stato||'Prospect')}</span>${A.O.length?`<span class="badge r">${A.O.length} opp.</span>`:''}</div></div></div>`}).join(''):`<div class="empty" style="padding:18px">${cl.length?'Nessun risultato.':'Nessun cliente in archivio. Tocca “+ Nuovo” per iniziare.'}</div>`}</div>
+ <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button></div>
+ <p class="disc">Archivio cifrato con la tua password. Si blocca da solo dopo ${LOCK_MIN} minuti di inattività.</p></div>`;
+ const qi=$('#q');qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;renderList();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
+ $('#filtro').onchange=e=>{S.filtro=e.target.value;renderList()};$('#ord').onchange=e=>{S.ord=e.target.value;renderList()};
+}
+
+function field(f,obj,base,wide){
+ const[k,l,t='text',o]=f;const p=base?base+'.'+k:k;const v=obj?.[k]??'';
+ const w=(t==='area'||wide)?' wide':'';
+ if(t==='bool')return`<label class="fld chk"><input type="checkbox" data-f="${p}" data-t="bool" ${v?'checked':''}>${esc(l)}</label>`;
+ let inp;
+ if(t==='sel')inp=`<select data-f="${p}">${(v&&!o.includes(v)?[v,...o]:o).map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+ else if(t==='area')inp=`<textarea data-f="${p}">${esc(v)}</textarea>`;
+ else if(t==='date')inp=`<input type="date" data-f="${p}" value="${esc(v)}">`;
+ else if(t==='num')inp=`<input type="text" inputmode="decimal" data-f="${p}" value="${esc(v)}" placeholder="0">`;
+ else inp=`<input type="text" data-f="${p}" value="${esc(v)}"${k==='cf'?' style="text-transform:uppercase"':''}>`;
+ return`<label class="fld${w}">${esc(l)}${inp}</label>`;
+}
+function arrBlock(key,addLbl){
+ const list=S.cur[key]||[];
+ return`<div class="lbl">${ARR_TITLES[key]}</div>${list.length?'':`<div class="empty">Nessun elemento.</div>`}
+ ${list.map((r,i)=>`<div class="card rowcard"><button class="btn ico ghost x" data-a="delrow" data-k="${key}" data-i="${i}" title="Elimina">✕</button><h3>${esc(ROW_NAME[key](r))}</h3><div class="grid">${F[key].map(f=>field(f,r,key+'.'+i)).join('')}</div></div>`).join('')}
+ <button class="btn sm" data-a="addrow" data-k="${key}">+ ${addLbl}</button>`;
+}
+function liveSummary(){
+ const A=analizza(S.cur);const t=S.tab;
+ if(t==='pat')return`<div class="sum"><div><b>${eur(A.totAtt)}</b><span>Totale attività</span></div><div><b>${eur(A.totPas)}</b><span>Totale passività</span></div><div><b>${eur(A.netto)}</b><span>Patrimonio netto</span></div><div><b>${eur(A.fin)}</b><span>di cui finanziario</span></div></div>`;
+ if(t==='cop')return`<div class="sum"><div><b>${(S.cur.cop||[]).length}</b><span>Coperture</span></div><div><b>${eur(A.premi)}</b><span>Premi annui</span></div><div><b>${eur(A.tcmEs)}</b><span>Capitali caso morte</span></div></div>`;
+ if(t==='lav')return`<div class="sum"><div><b>${eur(A.reddito+num(S.cur.altriRedditi)+num(S.cur.redditoFam))}</b><span>Redditi netti familiari</span></div><div><b>${eur(A.spese*12)}</b><span>Spese annue</span></div><div><b>${eur(A.reddito+num(S.cur.altriRedditi)+num(S.cur.redditoFam)-A.spese*12-A.rate*12)}</b><span>Risparmio potenziale annuo</span></div></div>`;
+ if(t==='fam')return`<div class="sum"><div><b>${(S.cur.fam||[]).length}</b><span>Familiari</span></div><div><b>${A.aCarico}</b><span>A carico</span></div></div>`;
+ return'';
+}
+function tabBody(){
+ const c=S.cur,t=S.tab;
+ if(t==='anag')return`<div class="lbl">Dati anagrafici</div><div class="card"><div class="grid">${F.anag.map(f=>field(f,c)).join('')}</div></div>
+  <div style="margin-top:16px" class="row"><button class="btn sm" data-a="auguri" data-id="${c.id}">Messaggio di auguri WhatsApp</button></div><div style="margin-top:26px" class="row"><button class="btn sm del" data-a="delclient">Elimina cliente</button></div>`;
+ if(t==='fam')return`<div id="live">${liveSummary()}</div>${arrBlock('fam','Aggiungi familiare')}`;
+ if(t==='lav')return`<div id="live">${liveSummary()}</div><div class="lbl">Lavoro e redditi</div><div class="card"><div class="grid">${F.lav.map(f=>field(f,c)).join('')}</div></div>${arrBlock('az','Aggiungi azienda')}`;
+ if(t==='pat')return`<div id="live">${liveSummary()}</div>${arrBlock('att','Aggiungi attività')}${arrBlock('pas','Aggiungi passività')}`;
+ if(t==='int')return `<p class="note" style="margin:10px 2px 0">Le parole chiave servono ad abbinare il cliente agli eventi pubblici importati (squadre, località, manifestazioni, artisti…).</p>${arrBlock('int','Aggiungi passione')}${arrBlock('ric','Aggiungi ricorrenza')}`;
+ if(t==='ban')return arrBlock('ban','Aggiungi rapporto');
+ if(t==='cop')return`<div id="live">${liveSummary()}</div>${arrBlock('cop','Aggiungi copertura')}`;
+ if(t==='note')return arrBlock('note','Aggiungi nota');
+ if(t==='doc')return docsBody();
+ if(t==='ana')return anaBody();
+}
+function anaBody(){
+ const c=S.cur,A=analizza(c);const prop=c.prop||{};
+ const cats=CATS.filter(k=>A.byCat[k]>0);
+ return`<div class="lbl">Quadro di sintesi</div>
+ <div class="sum"><div><b>${A.eta??'—'}</b><span>Età</span></div><div><b>${eur(A.netto)}</b><span>Patrimonio netto</span></div><div><b>${eur(A.fin)}</b><span>Patrimonio finanziario</span></div><div><b>${eur(A.totPas)}</b><span>Debiti residui</span></div><div><b>${eur(A.reddito)}</b><span>Reddito netto annuo</span></div><div><b>${A.mesiLiq===null?'—':A.mesiLiq.toFixed(1).replace('.',',')}</b><span>Mesi di spese coperti da liquidità</span></div></div>
+ ${cats.length?`<div class="lbl">Composizione delle attività</div><div class="card">${cats.map(k=>{const p=A.totAtt?A.byCat[k]/A.totAtt*100:0;return`<div class="row" style="justify-content:space-between;font-size:13.5px"><span>${k}</span><span style="color:var(--gold2)">${eur(A.byCat[k])} · ${p.toFixed(0)}%</span></div><div class="bar"><i style="width:${p}%"></i></div>`}).join('')}</div>`:''}
+ <div class="lbl">Fabbisogno di protezione</div><div class="card">
+  <div class="row"><label class="fld" style="width:200px">Anni di reddito da proteggere<input type="text" inputmode="numeric" data-f="anniTCM" value="${esc(c.anniTCM??'')}" placeholder="5"></label></div>
+  <div class="sum"><div><b>${eur(A.fabb)}</b><span>Fabbisogno caso morte</span></div><div><b>${eur(A.tcmEs)}</b><span>Già assicurato</span></div><div><b style="color:${A.gap>0?'#ff8f9f':'var(--ok)'}">${eur(A.gap)}</b><span>Scopertura</span></div></div>
+  <div class="formula">Calcolo: debiti residui + reddito netto annuo × anni indicati − capitali TCM e CPI in essere. Stima di prima approssimazione.</div></div>
+ <div class="lbl">Opportunità di consulenza</div><div class="card">${A.O.length?A.O.map(o=>`<label class="opp"><input type="checkbox" data-f="prop.${o.k}" data-t="bool" ${prop[o.k]?'checked':''}><span><b>${esc(o.t)}</b><span class="sub">${esc(o.d)}</span></span></label>`).join(''):'<div class="empty">Nessuna opportunità rilevata con i dati inseriti. Completa patrimonio, redditi e coperture.</div>'}
+  <p class="sub" style="margin:10px 0 4px">Spunta le aree da inserire nella proposta.</p>
+  <label class="fld wide" style="margin-top:6px">Note per la proposta<textarea data-f="propNote">${esc(c.propNote||'')}</textarea></label></div>
+ <div class="row" style="margin-top:16px"><button class="btn pri" data-a="scheda">Scarica scheda di sintesi</button><button class="btn" data-a="copytxt">Copia testo</button></div>
+ <p class="disc">${esc(disclaimer())}</p>`;
+}
+function renderClient(){
+ const c=S.cur;
+ $('#app').innerHTML=topbar(`<span id="ttl">${esc(fullName(c))}</span>`,`<button class="btn ico" data-a="back" title="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn ico" data-a="voice" title="Inserimento vocale" aria-label="Inserimento vocale">${MIC}</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+
+ `<div class="wrap"><div class="tabs">${TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-a="tab" data-k="${k}">${l}</button>`).join('')}</div><div id="tab">${tabBody()}</div></div>`;
+}
+function rerenderTab(){const y=scrollY;$('#tab').innerHTML=tabBody();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.k===S.tab));scrollTo(0,y)}
+
+/* ================== Eventi ================== */
+function setPath(obj,path,val){const ps=path.split('.');let o=obj;for(let i=0;i<ps.length-1;i++){const k=ps[i];if(o[k]==null)o[k]=/^\d+$/.test(ps[i+1])?[]:{};o=o[k]}o[ps[ps.length-1]]=val}
+document.addEventListener('input',e=>{const el=e.target;if(!el.dataset||!el.dataset.f||!S.cur)return;
+ let v=el.dataset.t==='bool'?el.checked:el.value;if(el.dataset.f==='cf')v=v.toUpperCase();
+ setPath(S.cur,el.dataset.f,v);touch();
+ if(el.dataset.f==='nome'||el.dataset.f==='cognome'){const t=$('#ttl');if(t)t.textContent=fullName(S.cur)}
+ if(el.type==='checkbox'||el.tagName==='SELECT')afterChange(el);
+});
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset&&el.dataset.f&&S.cur&&el.type!=='checkbox'&&el.tagName!=='SELECT')afterChange(el)});
+function afterChange(el){
+ const live=$('#live');if(live)live.innerHTML=liveSummary();
+ if(S.tab==='ana'&&(el.dataset.f==='anniTCM'))rerenderTab();
+ const card=el.closest('.rowcard');if(card){const m=el.dataset.f.match(/^(\w+)\.(\d+)\./);if(m){const h=card.querySelector('h3');if(h)h.textContent=ROW_NAME[m[1]](S.cur[m[1]][+m[2]])}}
+}
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+ if(a==='retry')return loadVault();
+ if(a==='setup')return doSetup();
+ if(a==='lock')return lock();
+ if(a==='new'){newClient();setTimeout(()=>{const n=document.querySelector('[data-f="nome"]');n&&n.focus()},60);return}
+ if(a==='newvoice'){newClient();voiceBox(true);return}
+ if(a==='voice')return voiceBox(false);
+ if(a==='auguri'){const c=S.clients[b.dataset.id];const x=ricorrenze([c],366).find(r=>r.kind==='bday');if(x)return openRic(x);return waBox(c,{title:'Auguri di <em>compleanno</em>',intro:esc(fullName(c))+'.',tplKey:true,key:'bday:'+new Date().getFullYear(),make:t=>getTpl(t).replace(/\{nome\}/g,c.nome||''),ai:'il suo compleanno'})}
+ if(a==='ric')return openRic(RIC[+b.dataset.k]);
+ if(a==='evmsg')return openEv(b.dataset.ev,b.dataset.id);
+ if(a==='eventi')return eventiBox();
+ if(a==='pastecli')return pasteBox();
+ if(a==='docopen')return docOpen(b.dataset.id);
+ if(a==='docdel')return docDel(b.dataset.id);
+ if(a==='docai')return docExtract(b.dataset.id);
+ if(a==='vclose')return closeVoice();
+ if(a==='vapply')return applyVoice();
+ if(a==='open'){S.cur=S.clients[b.dataset.id];S.tab='anag';S.view='client';setStatus('');render();scrollTo(0,0);return}
+ if(a==='back'){flush();S.cur=null;S.view='list';render();scrollTo(0,0);return}
+ if(a==='tab'){S.tab=b.dataset.k;rerenderTab();scrollTo(0,0);return}
+ if(a==='addrow'){const k=b.dataset.k;const r={};if(k==='note')r.data=today();if(k==='att')r.cat='Liquidità';if(k==='pas')r.tipo='Mutuo';if(k==='cop')r.tipo=COPS[0];if(k==='ban')r.tipo='Conto corrente';if(k==='fam')r.rel='Coniuge';if(k==='int')r.cat='Calcio';if(k==='ric'){r.tipo='Anniversario di matrimonio';r.annuale=true}(S.cur[k]=S.cur[k]||[]).push(r);touch();rerenderTab();const cards=document.querySelectorAll('.rowcard');const last=[...cards].filter(x=>x.querySelector(`[data-f^="${k}."]`)).pop();last&&last.scrollIntoView({behavior:'smooth',block:'center'});return}
+ if(a==='delrow'){const k=b.dataset.k,i=+b.dataset.i;confirmBox('Eliminare questo elemento?',()=>{S.cur[k].splice(i,1);touch();rerenderTab()});return}
+ if(a==='delclient'){confirmBox(`Eliminare definitivamente la scheda di ${fullName(S.cur)}?`,async()=>{const id=S.cur.id;dirty.delete(id);try{await saving;for(const d of (S.cur.docs||[]))for(let i=0;i<d.n;i++)await store.delChunk(d.id+'_'+i).catch(()=>{});await store.del('c_'+id)}catch(err){toast('Eliminazione non riuscita');return}delete S.clients[id];delete S.raw['c_'+id];S.cur=null;S.view='list';render();toast('Cliente eliminato')});return}
+ if(a==='scheda')return scaricaScheda();
+ if(a==='copytxt'){try{await navigator.clipboard.writeText(testoScheda());toast('Testo copiato')}catch(err){toast('Copia non consentita in questa vista')}return}
+ if(a==='backup')return backupBox();
+ if(a==='exp')return esportaBackup();
+ if(a==='modalclose')return closeModal();
+});
+
+/* ================== Modali ================== */
+function closeModal(){$('#modal').innerHTML=''}
+function confirmBox(msg,ok){$('#modal').innerHTML=`<div class="modal"><div class="card gold"><p>${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" data-a="modalclose">Annulla</button><button class="btn pri" id="okb">Conferma</button></div></div></div>`;$('#okb').onclick=()=>{closeModal();ok()}}
+function backupBox(){
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold"><h2>Backup <em>archivio</em></h2>
+ <p class="note">Il file di backup resta cifrato: per ripristinarlo serve la password con cui è stato creato.</p>
+ <label class="fld chk" style="padding-top:8px"><input type="checkbox" id="bkf" checked>Includi i documenti allegati (file più grande)</label>
+ <div class="row" style="margin:12px 0"><button class="btn pri" data-a="exp">Esporta backup</button><label class="btn" style="display:inline-block">Importa backup<input type="file" id="impf" accept=".json,application/json" style="display:none"></label></div>
+ <div id="impbox"></div><div class="err" id="err"></div>
+ <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
+ $('#impf').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;let data;try{data=JSON.parse(await f.text());if(data.app!=='archivio-clienti')throw 0}catch(err){$('#err').textContent='File non valido.';return}
+  $('#impbox').innerHTML=`<p class="note">${Object.keys(data.items||{}).length} schede nel file. Password del backup:</p><input type="password" id="ipw"><button class="btn pri sm" id="ibtn" style="margin-top:8px">Importa</button>`;
+  $('#ibtn').onclick=()=>importa(data,$('#ipw').value)};
+}
+async function esportaBackup(){
+ await flush();
+ const items={};for(const[k,v]of Object.entries(S.raw))if(k.startsWith('c_'))items[k]={iv:v.iv,ct:v.ct};
+ const files={};let miss=0;
+ if($('#bkf')&&$('#bkf').checked){toast('Preparo i documenti…');for(const c of Object.values(S.clients))for(const d of (c.docs||[]))for(let i=0;i<d.n;i++){try{const ch=await store.getChunk(d.id+'_'+i);if(ch)files[d.id+'_'+i]=ch.d;else miss++}catch(e){miss++}}}
+ const data=JSON.stringify({app:'archivio-clienti',v:2,creato:new Date().toISOString(),meta:{v:1,salt:S.meta.salt,iv:S.meta.iv,ct:S.meta.ct},items,eventi:S.raw.eventi?{iv:S.raw.eventi.iv,ct:S.raw.eventi.ct}:null,files});
+ const fn='Backup_archivio_clienti_'+today()+'.json';
+ try{await saveFile(fn,data);toast(miss?'Backup salvato ('+miss+' parti di documenti mancanti)':'Backup salvato');return}catch(err){if(err&&err.code==='declined')return}
+ try{await navigator.clipboard.writeText(data);toast('Download non disponibile: backup copiato negli appunti')}catch(err){$('#err').textContent='Esportazione non consentita in questa vista.'}
+}
+async function importa(data,pw){
+ const er=$('#err');er.textContent='Verifica…';let key;
+ try{key=await deriveKey(pw,unb64(data.meta.salt));await decJSON(key,data.meta)}catch(e){er.textContent='Password del backup errata.';return}
+ let n=0,nd=0;const FL=data.files||{};
+ for(const v of Object.values(data.items||{})){try{const c=await decJSON(key,v);
+  const docs=[];for(const d of (c.docs||[])){try{let ct='';for(let i=0;i<d.n;i++){if(FL[d.id+'_'+i]==null)throw 0;ct+=FL[d.id+'_'+i]}
+   const buf=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(d.iv)},key,unb64(ct));const iv=crypto.getRandomValues(new Uint8Array(12));const nct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},S.key,buf));
+   const nn=Math.ceil(nct.length/CHUNK);er.textContent='Importo i documenti… '+(++nd);for(let i=0;i<nn;i++)await store.putChunk(d.id+'_'+i,{d:nct.slice(i*CHUNK,(i+1)*CHUNK)});docs.push({...d,n:nn,iv:b64(iv)})}catch(e){}}
+  c.docs=docs;S.clients[c.id]=c;dirty.add(c.id);n++}catch(e){}}
+ if(data.eventi){try{const l=(await decJSON(key,data.eventi)).list||[];l.forEach(e=>{if(!S.eventi.some(x=>x.data===e.data&&x.titolo===e.titolo))S.eventi.push(e)});await saveEventi()}catch(e){}}
+ await flush();closeModal();render();toast(n+' schede importate'+(nd?', '+nd+' documenti':''));
+}
+
+/* ================== Inserimento vocale ================== */
+function newClient(){const c={id:uid(),stato:'Prospect',created:Date.now(),updated:Date.now(),fam:[],int:[],ric:[],az:[],att:[],pas:[],ban:[],cop:[],note:[]};S.clients[c.id]=c;S.cur=c;S.tab='anag';dirty.add(c.id);flush();S.view='client';render();scrollTo(0,0);return c}
+const V_SCALAR=[...F.anag,...F.lav];
+const V_ARR=['fam','int','ric','az','att','pas','ban','cop'];
+function specLine(f){const[k,l,t='text',o]=f;return`  ${k}: ${l}`+(t==='sel'?` — una tra: ${o.filter(x=>x!=='—').join(' | ')}`:t==='num'?' — numero':t==='date'?' — data AAAA-MM-GG':t==='bool'?' — true/false':'')}
+function voiceBox(isNew){
+ const mic=DICT&&!dictOff;
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Inserimento <em>vocale</em></h2>
+ <p class="note" style="margin:8px 0 10px">${mic?'Tocca <b>Detta</b> e parla liberamente.':'Tocca il campo e usa il <b>microfono della tastiera</b> del telefono per dettare.'} ${isNew?'Inizia con nome e cognome del cliente.':'Le informazioni verranno aggiunte alla scheda di <b>'+esc(fullName(S.cur))+'</b>.'}</p>
+ <textarea id="vtxt" style="min-height:150px" placeholder="Es.: ${isNew?'Mario Rossi, nato il 10 maggio 1975, imprenditore, ':''}sposato con Anna, due figli a carico, mutuo di 150 mila euro con Intesa con rata di 900 euro, conto titoli Fineco da 80 mila, reddito netto 60 mila l'anno…"></textarea>
+ <div id="vpart" class="sub" style="min-height:18px;font-style:italic"></div>
+ <div class="row" style="margin-top:8px">${mic?`<button class="btn" id="vmic">${MIC} Detta</button>`:''}<span class="grow"></span><button class="btn ghost" data-a="vclose">Chiudi</button><button class="btn pri" id="vgo">${SAMPLE?'Compila la scheda':'Salva come nota'}</button></div>
+ <div class="err" id="err"></div><div id="vres"></div></div></div>`;
+ const b=$('#vmic');
+ if(b)b.onclick=()=>{$('#err').textContent='';if(DICT.active()){DICT.stop().catch(()=>{});return}
+  DICT.start({language:'it'}).catch(e=>{const er=$('#err');if(!er)return;if(e.code==='not_granted'){dictOff=true;b.remove();er.textContent='Microfono non autorizzato: puoi scrivere o usare il microfono della tastiera.'}else if(e.code==='unavailable'){dictOff=true;b.remove();er.textContent='Dettatura non disponibile qui: usa il microfono della tastiera.'}else if(e.code!=='stopped'&&e.code!=='dismissed')er.textContent='Dettatura non riuscita, riprova.'})};
+ $('#vgo').onclick=runVoice;
+ if(!mic)setTimeout(()=>$('#vtxt')&&$('#vtxt').focus(),80);
+}
+function closeVoice(){if(DICT&&DICT.active())DICT.stop().catch(()=>{});if(voiceCtl){voiceCtl.abort();voiceCtl=null}voicePending=null;closeModal()}
+function cleanRow(fields,src){const out={};if(!src||typeof src!=='object')return out;
+ for(const[k,,t='text',o]of fields){let v=src[k];if(v==null||v==='')continue;
+  if(t==='num'){v=typeof v==='number'?v:num(v);if(!isFinite(v))continue}
+  else if(t==='bool')v=v===true||v==='true'||v==='sì'||v==='si';
+  else if(t==='date'){v=String(v).trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))continue}
+  else if(t==='sel'){const m=o.find(x=>x.toLowerCase()===String(v).trim().toLowerCase());if(!m||m==='—')continue;v=m}
+  else v=String(v).trim();
+  if(v===''||v===false&&t!=='bool')continue;out[k]=v}
+ return out}
+function rowDetail(key,r){return F[key].filter(f=>r[f[0]]!==undefined&&r[f[0]]!=='').map(f=>`${f[1].replace(/ \(€\)| \(%\)/,'')}: ${fval(f,r[f[0]])}`).join(' · ')}
+function extractPrompt(source,how){const c=S.cur;return `Estrai dati strutturati per la scheda di un cliente o prospect di un consulente finanziario italiano.
+Data di oggi: ${today()}.
+Cliente della scheda: ${c.nome||c.cognome?fullName(c):'scheda nuova, senza nome'}.
+
+${source}
+
+Regole:
+- Estrai SOLO ciò che è ${how}; non inventare valori.
+- Importi in euro come numeri semplici (es. "150 mila" -> 150000; "1.234,56" -> 1234.56). Percentuali come numeri (es. 30).
+- Date nel formato AAAA-MM-GG. Se viene detta solo l'età, non inventare la data di nascita.
+- Per i campi a scelta usa esattamente una delle opzioni elencate, altrimenti ometti il campo.
+- Hobby, passioni, squadre del cuore e interessi vanno in "int" (con parole chiave utili a trovare eventi); anniversari e ricorrenze personali in "ric".
+- Gli importi delle attività vanno in "att" con la categoria più adatta; debiti e mutui in "pas"; polizze in "cop" (scadenza = fine del periodo assicurato; premio = premio lordo annuo); conti e rapporti in "ban".
+- Metti in "extra" un breve riassunto di ciò che è utile ma non rientra in nessun campo (stringa vuota se nulla).
+
+Rispondi solo con JSON in questa forma:
+{"campi":{...},"aggiungi":{"fam":[],"int":[],"ric":[],"az":[],"att":[],"pas":[],"ban":[],"cop":[]},"extra":""}
+
+Chiavi ammesse in "campi":
+${V_SCALAR.map(specLine).join('\n')}
+
+Chiavi ammesse per ogni elemento di "aggiungi":
+${V_ARR.map(k=>`${k} (${ARR_TITLES[k]}):\n${F[k].map(specLine).join('\n')}`).join('\n')}`}
+function parseExtract(out,txt,noteLbl){
+ const campi=cleanRow(V_SCALAR,out&&(out.campi||out.cliente));
+ if(campi.cf)campi.cf=campi.cf.toUpperCase();
+ const src=out&&(out.aggiungi||out.cliente)||{};
+ const rows={};V_ARR.forEach(k=>{const arr=Array.isArray(src[k])?src[k]:[];rows[k]=arr.map(r=>cleanRow(F[k],r)).filter(r=>Object.keys(r).length)});
+ return{campi,rows,extra:typeof out?.extra==='string'?out.extra.trim():'',txt,noteLbl};
+}
+async function runVoice(){
+ const txt=($('#vtxt').value||'').trim(),er=$('#err'),res=$('#vres');er.textContent='';
+ if(!txt){er.textContent='Detta o scrivi qualcosa prima.';return}
+ if(DICT&&DICT.active())await DICT.stop().catch(()=>{});
+ const fullTxt=($('#vtxt').value||'').trim();
+ if(!SAMPLE){voicePending={campi:{},rows:{},extra:'',txt:fullTxt,noteLbl:'Salva il testo nel diario'};showVoicePreview();return}
+ const c=S.cur;const go=$('#vgo');go.disabled=true;
+ res.innerHTML=`<p class="note" style="margin-top:12px">Sto leggendo il testo e preparo i campi… <button class="btn sm ghost" id="vstop">Annulla</button></p>`;
+ voiceCtl=new AbortController();$('#vstop').onclick=()=>voiceCtl&&voiceCtl.abort();
+ const prompt=extractPrompt(`Testo dettato (trascrizione vocale, può contenere piccoli errori):\n"""\n${fullTxt}\n"""`,'detto esplicitamente');
+ try{
+  const out=await SAMPLE.json(prompt,{signal:voiceCtl.signal});
+  voiceCtl=null;if(!$('#vres'))return;
+  voicePending=parseExtract(out,fullTxt,'Salva anche il testo dettato nel diario');
+  showVoicePreview();
+ }catch(e){voiceCtl=null;go.disabled=false;if(!$('#vres'))return;res.innerHTML='';
+  const m={cancelled:'',not_granted:'Uso di Claude non autorizzato: il testo può essere salvato come nota.',sampling_disabled:'Compilazione automatica non disponibile: il testo può essere salvato come nota.',rate_limited:'Troppe richieste o limite di utilizzo raggiunto: riprova più tardi.',invalid_json:'Non sono riuscito a interpretare il testo: riprova o riformula.',refused:'Richiesta non elaborata: prova a riformulare.'};
+  er.textContent=m[e&&e.code]??'Elaborazione non riuscita, riprova.';
+  if(['not_granted','sampling_disabled','not_declared','capability_disabled'].includes(e&&e.code)){SAMPLE=null;go.textContent='Salva come nota'}}
+}
+function showVoicePreview(){
+ const P=voicePending,c=S.cur,res=$('#vres');if($('#vgo'))$('#vgo').disabled=false;
+ const L=[];
+ for(const[k,v]of Object.entries(P.campi)){const f=V_SCALAR.find(x=>x[0]===k);const old=fval(f,c[k]);L.push(`<div class="chg"><b>${esc(f[1])}</b>: ${old?`<s style="color:var(--mut)">${esc(old)}</s> → `:''}${esc(fval(f,v))}</div>`)}
+ V_ARR.forEach(k=>P.rows[k].forEach(r=>L.push(`<div class="chg"><b>+ ${esc(ARR_TITLES[k])}</b>: ${esc(rowDetail(k,r))}</div>`)));
+ if(P.extra)L.push(`<div class="chg"><b>Da annotare</b>: ${esc(P.extra)}</div>`);
+ res.innerHTML=`<div class="lbl">Da inserire nella scheda</div>
+ <div class="card" style="padding:6px 12px">${L.length?L.join(''):'<div class="empty" style="padding:8px 0">Nessun campo riconosciuto: il testo verrà salvato come nota.</div>'}</div>
+ <label class="fld chk" style="padding-top:10px"><input type="checkbox" id="vnote" checked>${esc(P.noteLbl||'Salva anche il testo dettato nel diario')}</label>
+ <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn pri" data-a="vapply">Conferma e inserisci</button></div>`;
+ res.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function applyVoice(){
+ const P=voicePending,c=S.cur;if(!P||!c)return;
+ Object.assign(c,P.campi);
+ let n=Object.keys(P.campi).length;
+ V_ARR.forEach(k=>{(c[k]=c[k]||[]).push(...P.rows[k]);n+=P.rows[k].length});
+ const keep=$('#vnote')&&$('#vnote').checked;
+ if(keep||P.extra||!n){c.note=c.note||[];c.note.push({data:today(),testo:(keep||!n?P.txt:'')+(P.extra?((keep||!n)?'\n\n':'')+'Da annotare: '+P.extra:'')})}
+ voicePending=null;touch();closeVoice();render();toast(n?`Scheda aggiornata (${n} ${n===1?'voce':'voci'})`:'Testo salvato nel diario');
+}
+
+/* ================== Ricorrenze, eventi e messaggi WhatsApp ================== */
+function bdayIn(d){if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return null;const[,m,g]=d.split('-').map(Number);const n=new Date(today()+'T00:00:00');let y=n.getFullYear();
+ const mk=yy=>{const dd=(m===2&&g===29&&!(yy%4===0&&(yy%100!==0||yy%400===0)))?28:g;return new Date(yy,m-1,dd)};
+ let t=mk(y);if(t<n)t=mk(++y);return Math.round((t-n)/864e5)}
+const TPL={
+ lei:"Gentile {nome}, oggi è un giorno speciale e desidero farle i miei più sinceri auguri di buon compleanno. Che questo nuovo anno le porti serenità, salute e tante soddisfazioni.\nUn caro saluto,\nMassimiliano Di Luccio",
+ tu:"Ciao {nome}! Tanti auguri di buon compleanno 🎉 Ti auguro un anno pieno di serenità, salute e soddisfazioni.\nUn abbraccio,\nMassimiliano"};
+const TPL_OCC={
+ lei:"Gentile {nome}, in occasione {evento} desidero farle arrivare un pensiero e i miei più sinceri auguri.\nUn caro saluto,\nMassimiliano Di Luccio",
+ tu:"Ciao {nome}! In occasione {evento} ti mando un pensiero e i miei più sinceri auguri.\nUn abbraccio,\nMassimiliano"};
+const TPL_EV={
+ lei:"Gentile {nome}, in occasione di {evento} il mio pensiero è andato subito a lei e alla sua passione: le auguro di viverlo al meglio!\nUn caro saluto,\nMassimiliano Di Luccio",
+ tu:"Ciao {nome}! In occasione di {evento} il primo pensiero è andato a te e alla tua passione: goditelo!\nUn saluto,\nMassimiliano"};
+function getTpl(k){try{return localStorage.getItem('auguri_tpl_'+k)||TPL[k]}catch(e){return TPL[k]}}
+function waPhone(t){let s=String(t||'').replace(/[^\d+]/g,'');if(s.startsWith('+'))s=s.slice(1);else if(s.startsWith('00'))s=s.slice(2);else if(/^3\d{8,9}$/.test(s)||/^0\d{5,10}$/.test(s))s='39'+s;return s.replace(/\D/g,'')}
+function markDirty(c){if(S.cur===c){touch();return}c.updated=Date.now();dirty.add(c.id);flush()}
+function fill(t,v){return t.replace(/\{(\w+)\}/g,(m,k)=>v[k]??'')}
+function waBox(c,o){
+ const tono=c.tono||'lei';
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>${o.title}</h2>
+ <p class="note" style="margin:6px 0 12px">${o.intro} Il messaggio si apre in WhatsApp già scritto: <b>l'invio lo confermi tu</b>.</p>
+ <div class="grid" style="grid-template-columns:1fr 130px"><label class="fld">Cellulare di ${esc(fullName(c))}<input id="atel" inputmode="tel" value="${esc(c.tel||'')}" placeholder="333 1234567"></label><label class="fld">Tono<select id="atono"><option value="lei" ${tono==='lei'?'selected':''}>Lei</option><option value="tu" ${tono==='tu'?'selected':''}>Tu</option></select></label></div>
+ <label class="fld" style="margin-top:10px">Messaggio<textarea id="amsg" style="min-height:170px"></textarea></label>
+ <div class="row" style="margin-top:6px">${o.tplKey?`<button class="btn sm ghost" id="asave">Salva come modello</button>`:''}${SAMPLE&&o.ai?`<button class="btn sm" id="aai">Scrivi con Claude</button>`:''}<span class="sub" id="aaist"></span></div>
+ <div class="err" id="err"></div>
+ <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn ghost" data-a="modalclose">Chiudi</button><a class="btn pri" id="awa" href="#" target="_blank" rel="noopener" style="text-decoration:none">Apri in WhatsApp</a></div>
+ <p class="sub" id="awano" style="margin-top:8px"></p></div></div>`;
+ const setTxt=()=>{$('#amsg').value=o.make($('#atono').value)};
+ const upd=()=>{const ph=waPhone($('#atel').value),txt=$('#amsg').value,a=$('#awa');
+  a.href=ph?`https://wa.me/${ph}?text=${encodeURIComponent(txt)}`:`https://wa.me/?text=${encodeURIComponent(txt)}`;
+  $('#awano').textContent=ph?'Numero: +'+ph:'Nessun numero: WhatsApp ti farà scegliere il contatto.'};
+ setTxt();upd();
+ $('#atono').onchange=()=>{c.tono=$('#atono').value;markDirty(c);setTxt();upd()};
+ $('#amsg').oninput=upd;$('#atel').oninput=upd;
+ $('#atel').onchange=()=>{const v=$('#atel').value.trim();if(v&&v!==c.tel){c.tel=v;markDirty(c)}};
+ if($('#asave'))$('#asave').onclick=()=>{try{const k=$('#atono').value;let t=$('#amsg').value;if(c.nome)t=t.split(c.nome).join('{nome}');localStorage.setItem('auguri_tpl_'+k,t);toast('Modello salvato')}catch(e){toast('Salvataggio del modello non disponibile qui')}};
+ if($('#aai'))$('#aai').onclick=async()=>{const bt=$('#aai'),st=$('#aaist');bt.disabled=true;st.textContent='Scrivo…';const t=$('#atono').value;
+  try{const{text}=await SAMPLE(`Scrivi un breve messaggio WhatsApp (al massimo 3 frasi) che il consulente finanziario Massimiliano Di Luccio invia a un suo cliente come pensiero personale.
+Tono: ${t==='lei'?'cortese ed elegante, dando del Lei':'cordiale e informale, dando del tu'}.
+Nome del cliente: ${c.nome||'(non indicato: non usare nomi)'}.
+Occasione: ${o.ai}.
+Nessun riferimento a investimenti, prodotti, consulenza o appuntamenti di lavoro. Firma con "${t==='lei'?'Massimiliano Di Luccio':'Massimiliano'}". Rispondi solo con il testo del messaggio.`,{modelTier:'quick',cache:false});
+   $('#amsg').value=text.trim();upd();st.textContent=''}
+  catch(e){st.textContent=e&&e.code==='cancelled'?'':'Non disponibile ora, usa il testo proposto.';if(['not_granted','sampling_disabled'].includes(e&&e.code)){SAMPLE=null;bt.remove()}}
+  finally{if($('#aai'))bt.disabled=false}};
+ $('#awa').onclick=()=>{if(o.key){c.contatti=c.contatti||{};c.contatti[o.key]=today();markDirty(c);setTimeout(()=>{if(S.view==='list')renderList()},300)}};
+}
+function ricorrenze(cl,maxG){
+ const L=[],oy=g=>new Date(Date.now()+g*864e5).getFullYear();
+ cl.forEach(c=>{
+  const g=bdayIn(c.nascita);if(g!==null&&g<=maxG)L.push({c,g,kind:'bday',date:c.nascita,key:'bday:'+oy(g),t:g===0?`Oggi compie ${age(c.nascita)} anni`:`Compirà ${age(c.nascita)+1} anni`});
+  (c.fam||[]).forEach((f,i)=>{const g2=bdayIn(f.nascita);if(g2!==null&&g2<=maxG)L.push({c,g:g2,kind:'fam',i,date:f.nascita,key:'fam'+i+':'+oy(g2),t:`Compleanno di ${f.nome||'un familiare'}${f.rel?' ('+f.rel.toLowerCase()+')':''}`})});
+  (c.ric||[]).forEach((r,i)=>{if(!r.data)return;const g3=r.annuale?bdayIn(r.data):daysTo(r.data);if(g3!==null&&g3>=0&&g3<=maxG)L.push({c,g:g3,kind:'ric',i,date:r.data,key:'ric'+i+':'+oy(g3),t:(r.tipo||'Ricorrenza')+(r.chi?' · '+r.chi:'')})});
+ });
+ return L.sort((a,b)=>a.g-b.g);
+}
+function openRic(x){
+ const c=x.c;
+ if(x.kind==='bday')return waBox(c,{title:'Auguri di <em>compleanno</em>',intro:`${esc(fullName(c))}: ${esc(x.t.toLowerCase())}.`,tplKey:true,key:x.key,make:t=>getTpl(t).replace(/\{nome\}/g,c.nome||''),ai:`il suo compleanno${age(c.nascita)!==null?' ('+(x.g===0?age(c.nascita):age(c.nascita)+1)+' anni)':''}`});
+ let ctx,evT;
+ if(x.kind==='fam'){const f=c.fam[x.i];evT=()=>`del compleanno di ${f.nome||'un familiare'}`;ctx=`il compleanno di ${f.nome||'un familiare'} (${(f.rel||'familiare').toLowerCase()} del cliente): auguri da estendere`}
+ else{const r=c.ric[x.i];const yrs=r.annuale&&r.data?new Date().getFullYear()-Number(r.data.slice(0,4)):0;const di=r.chi?' di '+r.chi:'';
+  evT=t=>{const su=t==='tu'?'tuo':'suo';return({'Anniversario di matrimonio':'del vostro anniversario di matrimonio','Onomastico':`del ${su} onomastico`,'Laurea':`della laurea${di}`,'Nascita figlio/nipote':`della nascita${di}`,'Pensionamento':r.chi?`del pensionamento${di}`:`del ${su} pensionamento`,'Anniversario aziendale':`dell'anniversario${r.chi?' di '+r.chi:' della '+(t==='tu'?'tua':'sua')+' azienda'}`})[r.tipo]||`di questa ricorrenza${di}`};
+  ctx=`${r.tipo||'ricorrenza'}${r.chi?' (persona coinvolta: '+r.chi+')':''}${yrs>0?', '+yrs+' anni':''}${r.note?'; note: '+r.note:''}`}
+ waBox(c,{title:'Messaggio per la <em>ricorrenza</em>',intro:`${esc(fullName(c))}: ${esc(x.t)} (${fmtD(x.date).slice(0,5)}).`,key:x.key,make:t=>fill(TPL_OCC[t],{nome:c.nome||'',evento:evT(t)}),ai:ctx});
+}
+/* --- Eventi pubblici --- */
+function evMatch(c,ev){
+ for(const it of (c.int||[])){const blob=[it.cat,it.dett,it.tag].join(' ').toLowerCase();
+  for(const t of ev.tag||[]){const k=String(t).toLowerCase().trim();if(k.length>=3&&blob.includes(k))return it}}
+ return null}
+function occasioni(cl){
+ const out=[];(S.eventi||[]).forEach(ev=>{const g=daysTo(ev.data);if(g===null||g<0||g>45)return;const m=[];cl.forEach(c=>{const it=evMatch(c,ev);if(it)m.push({c,it})});if(m.length)out.push({ev,g,m})});
+ return out.sort((a,b)=>a.g-b.g)}
+function openEv(evId,cid){
+ const ev=(S.eventi||[]).find(e=>e.id===evId),c=S.clients[cid];if(!ev||!c)return;const it=evMatch(c,ev);
+ waBox(c,{title:'Messaggio per <em>l\'evento</em>',intro:`${esc(ev.titolo)} · ${fmtD(ev.data)}. Abbinato alla passione: <b>${esc(it?[it.cat,it.dett].filter(Boolean).join(' · '):'')}</b>.`,key:'ev:'+ev.id,
+  make:t=>fill(TPL_EV[t],{nome:c.nome||'',evento:ev.titolo}),
+  ai:`evento pubblico "${ev.titolo}" del ${fmtD(ev.data)}${ev.desc?' ('+ev.desc+')':''}; il cliente ha questa passione: ${[it?.cat,it?.dett].filter(Boolean).join(', ')}`});
+}
+async function saveEventi(){try{const e=await encJSON(S.key,{list:S.eventi});e.u=Date.now();await store.put('eventi',e);S.raw.eventi=e}catch(err){toast('Salvataggio eventi non riuscito')}}
+function passioniTesto(){
+ const set=new Map();Object.values(S.clients).forEach(c=>(c.int||[]).forEach(i=>{const l=[i.cat,i.dett].filter(Boolean).join(': ')+(i.tag?` (${i.tag})`:'');if(l.trim())set.set(l.toLowerCase(),l)}));
+ return set.size?`Cerca sul web gli eventi pubblici dei prossimi 60 giorni (da oggi, ${todayIT()}) collegati a queste passioni dei miei clienti: partite, manifestazioni, fiere, concerti, mostre, gare. Verifica date e fonti.\n\nPassioni:\n`+[...set.values()].map(x=>'- '+x).join('\n')+`\n\nRestituiscimi l'elenco e, in un blocco di codice da copiare, un array JSON per l'Archivio Clienti in questo formato:\n[{"data":"AAAA-MM-GG","titolo":"…","desc":"luogo o breve descrizione","tag":["parole chiave uguali a quelle delle passioni"],"fonte":"URL"}]`:''}
+function eventiBox(){
+ const txt=passioniTesto();const ev=[...(S.eventi||[])].sort((a,b)=>a.data.localeCompare(b.data));
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Eventi <em>pubblici</em></h2>
+ <div class="lbl">1 · Chiedi a Claude di cercarli</div>
+ <p class="note">Copia l'elenco delle passioni (senza nomi dei clienti) e incollalo nella chat con Claude: riceverai un blocco di eventi da importare.</p>
+ ${txt?`<textarea id="ptxt" readonly style="min-height:110px;font-size:13px">${esc(txt)}</textarea><div class="row" style="margin-top:6px"><button class="btn sm" id="pcopy">Copia elenco</button></div>`:'<div class="empty">Nessuna passione registrata: aggiungile nella sezione Passioni dei clienti.</div>'}
+ <div class="lbl">2 · Importa gli eventi</div>
+ <textarea id="eimp" placeholder="Incolla qui il blocco EVENTI ricevuto da Claude" style="min-height:90px;font-size:13px"></textarea>
+ <div class="row" style="margin-top:6px"><button class="btn sm pri" id="ego">Importa</button><span class="err" id="err" style="margin:0"></span></div>
+ <div class="lbl">Eventi in archivio (${ev.length})</div>
+ ${ev.length?`<div class="card" style="padding:4px 12px">${ev.map(e=>`<div class="chg row" style="flex-wrap:nowrap"><span class="dt">${fmtD(e.data)}</span><span class="grow"><b>${esc(e.titolo)}</b><div class="sub">${esc((e.tag||[]).join(', '))}</div></span><button class="btn ico ghost" data-ev="${e.id}" aria-label="Elimina">✕</button></div>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn sm ghost" id="epast">Elimina eventi passati</button></div>`:'<div class="empty">Nessun evento importato.</div>'}
+ <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
+ if($('#pcopy'))$('#pcopy').onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast('Elenco copiato')}catch(e){const t=$('#ptxt');t.focus();t.select();toast('Selezionato: copialo con Copia')}};
+ $('#ego').onclick=async()=>{const raw=$('#eimp').value,er=$('#err');let arr;
+  try{const i=raw.indexOf('['),j=raw.lastIndexOf(']');arr=JSON.parse(raw.slice(i,j+1));if(!Array.isArray(arr))throw 0}catch(e){er.textContent='Blocco non valido: incollalo per intero.';return}
+  let n=0;S.eventi=S.eventi||[];
+  for(const e of arr){if(!e||!/^\d{4}-\d{2}-\d{2}$/.test(e.data||'')||!e.titolo)continue;
+   const tag=(Array.isArray(e.tag)?e.tag:String(e.tag||'').split(/[,;]/)).map(x=>String(x).trim()).filter(Boolean);
+   if(S.eventi.some(x=>x.data===e.data&&x.titolo.toLowerCase()===String(e.titolo).toLowerCase()))continue;
+   S.eventi.push({id:uid(),data:e.data,titolo:String(e.titolo).slice(0,160),desc:String(e.desc||e.descrizione||'').slice(0,300),tag,fonte:String(e.fonte||'').slice(0,300)});n++}
+  await saveEventi();toast(n+' eventi importati');eventiBox();if(S.view==='list')renderList()};
+ document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=async()=>{S.eventi=S.eventi.filter(e=>e.id!==b.dataset.ev);await saveEventi();eventiBox();if(S.view==='list')renderList()});
+ if($('#epast'))$('#epast').onclick=async()=>{S.eventi=S.eventi.filter(e=>daysTo(e.data)>=0);await saveEventi();eventiBox();if(S.view==='list')renderList()};
+}
+
+/* ================== Importa scheda da testo ================== */
+function pasteBox(){
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Importa <em>scheda</em></h2>
+ <p class="note" style="margin:6px 0 10px">Incolla il blocco "SCHEDA CLIENTE" preparato da Claude in chat. Se il cliente esiste già (stesso codice fiscale o stesso nome) i dati vengono aggiunti alla sua scheda.</p>
+ <textarea id="ptx" style="min-height:140px;font-size:13px" placeholder='{"archivio":"scheda-cliente", ...}'></textarea>
+ <div class="row" style="margin-top:8px"><span class="grow"></span><button class="btn ghost" data-a="modalclose">Chiudi</button><button class="btn pri" id="pgo">Leggi</button></div>
+ <div class="err" id="err"></div><div id="vres"></div></div></div>`;
+ $('#pgo').onclick=()=>{const raw=$('#ptx').value,er=$('#err');let o;
+  try{const i=raw.indexOf('{'),j=raw.lastIndexOf('}');o=JSON.parse(raw.slice(i,j+1))}catch(e){er.textContent='Blocco non valido: incollalo per intero.';return}
+  const cli=o.cliente||o;const P=parseExtract({campi:cli,aggiungi:cli,extra:o.extra||''},'','Salva una nota con la provenienza dei dati');
+  if(typeof cli.note==='string')P.extra=[P.extra,cli.note].filter(Boolean).join(' ');
+  P.txt=o.provenienza?String(o.provenienza):'Scheda importata da Claude';
+  if(!P.campi.nome&&!P.campi.cognome&&!P.campi.cf){er.textContent='Nella scheda mancano nome e codice fiscale.';return}
+  const key=x=>(x||'').toLowerCase().trim();
+  let c=Object.values(S.clients).find(x=>P.campi.cf&&key(x.cf)===key(P.campi.cf))||Object.values(S.clients).find(x=>key(x.nome)===key(P.campi.nome)&&key(x.cognome)===key(P.campi.cognome)&&x.cognome);
+  const isNew=!c;
+  if(isNew){c={id:uid(),stato:'Prospect',created:Date.now(),updated:Date.now(),fam:[],int:[],ric:[],az:[],att:[],pas:[],ban:[],cop:[],note:[],docs:[]};}
+  pendingImport={c,isNew};S.cur=c;voicePending=P;showVoicePreview();
+  $('#vres').insertAdjacentHTML('afterbegin',`<p class="note" style="margin-top:12px">${isNew?'Verrà creata una <b>nuova scheda</b>.':'Cliente già presente: i dati verranno aggiunti alla scheda di <b>'+esc(fullName(c))+'</b>.'}</p>`);
+  const ab=document.querySelector('[data-a="vapply"]');ab.dataset.a='papply';ab.onclick=()=>{const{c,isNew}=pendingImport;if(isNew)S.clients[c.id]=c;S.cur=c;S.view='client';S.tab='anag';applyVoice();pendingImport=null};
+ };
+}
+let pendingImport=null;
+/* ================== Documenti cifrati ================== */
+const MAXF=8*1024*1024,CHUNK=180000;
+const DOC_EXT={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+function fmtSize(n){return n>1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function docsBody(){
+ const c=S.cur,L=c.docs||[];
+ return `<div class="lbl">Documenti</div>
+ <p class="note" style="margin:0 2px 10px">PDF o foto (JPG, PNG) fino a 8 MB. I file vengono cifrati con la password dell'archivio.</p>
+ ${L.length?`<div class="card" style="padding:4px 14px">${L.map(d=>`<div class="chg row" style="flex-wrap:wrap;gap:8px"><span class="grow" style="min-width:160px"><b>${esc(d.nome)}</b><div class="sub">${d.tipo==='application/pdf'?'PDF':'Immagine'} · ${fmtSize(d.size)} · caricato il ${fmtD(d.data)}</div></span><button class="btn sm" data-a="docopen" data-id="${d.id}">Apri</button>${SAMPLE?`<button class="btn sm" data-a="docai" data-id="${d.id}">Estrai dati</button>`:''}<button class="btn ico ghost" data-a="docdel" data-id="${d.id}" aria-label="Elimina">✕</button></div>`).join('')}</div>`:'<div class="empty">Nessun documento.</div>'}
+ <div class="row" style="margin-top:10px"><label class="btn pri" style="display:inline-block">+ Carica documento<input type="file" id="docf" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" multiple style="display:none"></label><span class="sub" id="docst"></span></div>`;
+}
+document.addEventListener('change',async e=>{
+ if(e.target.id!=='docf'||!S.cur)return;const c=S.cur,files=[...e.target.files];e.target.value='';
+ for(const f of files){const st=$('#docst');
+  const tipo=f.type||({pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png'}[(f.name.split('.').pop()||'').toLowerCase()]||'');
+  if(!DOC_EXT[tipo]){toast(f.name+': formato non supportato');continue}
+  if(f.size>MAXF){toast(f.name+': supera 8 MB');continue}
+  try{st&&(st.textContent='Cifratura di '+f.name+'…');
+   const iv=crypto.getRandomValues(new Uint8Array(12));const ct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},S.key,await f.arrayBuffer()));
+   const id='d'+uid();const n=Math.ceil(ct.length/CHUNK);
+   for(let i=0;i<n;i++){st&&(st.textContent=`Caricamento ${f.name} ${Math.round(i/n*100)}%`);await store.putChunk(id+'_'+i,{d:ct.slice(i*CHUNK,(i+1)*CHUNK)})}
+   (c.docs=c.docs||[]).push({id,nome:f.name,tipo,size:f.size,data:today(),n,iv:b64(iv)});markDirty(c);toast('Documento caricato')}
+  catch(err){toast(err&&err.code==='quota_exceeded'?'Spazio dell\'archivio esaurito':'Caricamento non riuscito');}
+ }
+ if(S.tab==='doc')rerenderTab();
+});
+async function docBlob(d){let ct='';for(let i=0;i<d.n;i++){const ch=await store.getChunk(d.id+'_'+i);if(!ch)throw new Error('mancante');ct+=ch.d}
+ const buf=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(d.iv)},S.key,unb64(ct));return new Blob([buf],{type:d.tipo})}
+function docName(d){const e=(d.nome.split('.').pop()||'').toLowerCase();return ['pdf','jpg','jpeg','png','webp','gif'].includes(e)?d.nome:d.nome+'.'+DOC_EXT[d.tipo]}
+async function docOpen(id){
+ const d=(S.cur.docs||[]).find(x=>x.id===id);if(!d)return;toast('Apertura…');let blob;
+ try{blob=await docBlob(d)}catch(e){toast('Documento non leggibile');return}
+ if(d.tipo.startsWith('image/')){const u=URL.createObjectURL(blob);
+  $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2 style="font-size:18px">${esc(d.nome)}</h2><img src="${u}" alt="${esc(d.nome)}" style="width:100%;border-radius:10px;margin:10px 0"><div class="row" style="justify-content:flex-end"><button class="btn" id="dsave">Scarica</button><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
+  if($('#dsave'))$('#dsave').onclick=()=>saveFile(docName(d),blob).catch(()=>{});return}
+ if(!store.dl&&!window.claude){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),120000);return}
+ try{await saveFile(docName(d),blob)}catch(e){if(e&&e.code!=='declined')toast('Apertura non riuscita')}
+}
+function docDel(id){const c=S.cur,d=(c.docs||[]).find(x=>x.id===id);if(!d)return;
+ confirmBox(`Eliminare il documento "${d.nome}"?`,async()=>{c.docs=c.docs.filter(x=>x.id!==id);markDirty(c);rerenderTab();for(let i=0;i<d.n;i++)await store.delChunk(d.id+'_'+i).catch(()=>{});toast('Documento eliminato')})}
+let pdfjsP=null;
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+function pdfLib(){if(!pdfjsP)pdfjsP=(async()=>{const B='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';await loadScript(B+'pdf.min.js');await loadScript(B+'pdf.worker.min.js');const L=window.pdfjsLib;L.GlobalWorkerOptions.workerSrc=B+'pdf.worker.min.js';return L})().catch(e=>{pdfjsP=null;throw e});return pdfjsP}
+async function pdfToImages(blob,max){
+ const L=await pdfLib();const pdf=await L.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false}).promise;const out=[];
+ for(let p=1;p<=Math.min(max,pdf.numPages);p++){const page=await pdf.getPage(p);const v1=page.getViewport({scale:1});const vp=page.getViewport({scale:Math.min(2.2,1700/v1.width)});
+  const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+  await page.render({canvasContext:ctx,viewport:vp}).promise;out.push(await new Promise(r=>cv.toBlob(r,'image/jpeg',0.88)))}
+ return out}
+async function docExtract(id){
+ const c=S.cur,d=(c.docs||[]).find(x=>x.id===id);if(!d||!SAMPLE)return;
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Estrai <em>dati</em></h2><p class="note" style="margin:6px 0">${esc(d.nome)}</p><div class="err" id="err"></div><div id="vres"><p class="note">Preparo il documento…</p></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn ghost" data-a="vclose">Chiudi</button></div></div></div>`;
+ let imgs;
+ try{const lim=await SAMPLE.limits().catch(()=>null);if(!lim||!lim.images)throw{code:'images_unavailable'};
+  const blob=await docBlob(d);imgs=d.tipo==='application/pdf'?await pdfToImages(blob,Math.min(4,lim.images.maxCount||4)):[blob]}
+ catch(e){$('#vres').innerHTML='';$('#err').textContent=e&&e.code==='images_unavailable'?'Lettura dei documenti non disponibile in questa vista.':(d.tipo==='application/pdf'?'Non riesco a leggere questo PDF qui: carica una foto o uno screenshot della pagina e usa Estrai dati su quello.':'Documento non leggibile.');return}
+ $('#vres').innerHTML=`<p class="note">Claude sta leggendo il documento… <button class="btn sm ghost" id="vstop">Annulla</button></p>`;
+ voiceCtl=new AbortController();$('#vstop').onclick=()=>voiceCtl&&voiceCtl.abort();
+ try{const out=await SAMPLE.json(extractPrompt(`Le immagini allegate sono ${imgs.length>1?'le pagine':'la pagina'} del documento "${d.nome}" (es. polizza, quietanza, estratto conto, visura, documento d'identità) relativo a questo cliente.`,'scritto chiaramente nel documento'),{images:imgs,signal:voiceCtl.signal});
+  voiceCtl=null;if(!$('#vres'))return;
+  voicePending=parseExtract(out,`Dati estratti dal documento "${d.nome}"`,'Annota nel diario la provenienza dei dati');showVoicePreview()}
+ catch(e){voiceCtl=null;if(!$('#vres'))return;$('#vres').innerHTML='';$('#err').textContent=e&&e.code==='cancelled'?'':e&&e.code==='rate_limited'?'Limite di utilizzo raggiunto: riprova più tardi.':'Lettura non riuscita, riprova.'}
+}
+
+/* ================== Scheda di sintesi ================== */
+function disclaimer(){return`Elaborato a titolo esemplificativo, con dati riferiti al ${todayIT()}. Ogni elemento va verificato con la documentazione di sintesi bancaria, finanziaria e assicurativa e con la normativa fiscale e legale vigente. Dati, percentuali e performance non garantiscono risultati futuri; i rendimenti passati non sono indicativi di quelli futuri.`}
+function fval(f,v){const[,l,t]=f;if(v===''||v==null||v==='—')return'';if(t==='bool')return v?'Sì':'No';if(t==='date')return fmtD(v);if(t==='num')return/\(€\)/.test(l)?eur(num(v)):String(v);return String(v)}
+function tableHTML(key){const list=S.cur[key]||[];if(!list.length)return'';const fs=F[key].filter(f=>f[0]!=='note'||key==='note');
+ return`<h3>${ARR_TITLES[key]}</h3><table><tr>${fs.map(f=>`<th>${esc(f[1])}</th>`).join('')}</tr>${list.map(r=>`<tr>${fs.map(f=>`<td>${esc(fval(f,r[f[0]]))}</td>`).join('')}</tr>`).join('')}</table>`}
+function kv(fields,obj){const r=fields.map(f=>[f[1],fval(f,obj[f[0]])]).filter(x=>x[1]);return r.length?`<table class="kv">${r.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</table>`:''}
+function scaricaScheda(){
+ flush();const c=S.cur,A=analizza(c);const sel=A.O.filter(o=>(c.prop||{})[o.k]);const ops=sel.length?sel:A.O;
+ const html=`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Scheda di sintesi – ${esc(fullName(c))}</title><style>
+ body{font:13px/1.45 Inter,Arial,sans-serif;color:#222;max-width:860px;margin:24px auto;padding:0 18px}
+ h1{font:600 26px Georgia,serif;margin:0}h1 em{color:#9a7440}h2{font:600 17px Georgia,serif;color:#7d0c1e;border-bottom:1px solid #C9A26B;padding-bottom:4px;margin-top:26px}
+ h3{font-size:13px;margin:14px 0 6px;color:#555;text-transform:uppercase;letter-spacing:.06em}
+ table{border-collapse:collapse;width:100%;margin-bottom:8px}th,td{border:1px solid #ddd;padding:5px 7px;text-align:left;vertical-align:top}th{background:#f5f1ea;font-weight:600}
+ .kv th{width:38%}.box{display:flex;flex-wrap:wrap;gap:8px}.box div{border:1px solid #C9A26B;border-radius:8px;padding:7px 10px;min-width:150px}.box b{display:block;font:600 16px Georgia,serif;color:#7d0c1e}
+ .head{border-left:6px solid #7d0c1e;padding-left:12px}.disc{font-size:11px;color:#666;border-top:1px solid #ccc;margin-top:30px;padding-top:10px}
+ @media print{body{margin:0}}</style></head><body>
+ <div class="head"><div style="font-size:11px;letter-spacing:.15em;color:#9a7440;text-transform:uppercase">Scheda di sintesi riservata</div><h1>${esc(fullName(c))}</h1><div>Aggiornata al ${todayIT()} · ${esc(FIRMA)}</div></div>
+ <h2>Anagrafica e profilo</h2>${kv(F.anag.filter(f=>!['nome','cognome'].includes(f[0])),c)}${tableHTML('fam')}${tableHTML('int')}${tableHTML('ric')}
+ <h2>Lavoro, redditi e aziende</h2>${kv(F.lav,c)}${tableHTML('az')}
+ <h2>Patrimonio</h2><div class="box"><div><b>${eur(A.totAtt)}</b>Attività</div><div><b>${eur(A.totPas)}</b>Passività</div><div><b>${eur(A.netto)}</b>Patrimonio netto</div><div><b>${eur(A.fin)}</b>Finanziario</div></div>${tableHTML('att')}${tableHTML('pas')}${tableHTML('ban')}
+ <h2>Coperture assicurative</h2>${tableHTML('cop')||'<p>Nessuna copertura censita.</p>'}
+ <div class="box"><div><b>${eur(A.fabb)}</b>Fabbisogno caso morte</div><div><b>${eur(A.tcmEs)}</b>Già assicurato</div><div><b>${eur(A.gap)}</b>Scopertura</div></div>
+ <p style="font-size:11.5px;color:#666">Fabbisogno = debiti residui + reddito netto annuo × ${A.anni} anni − capitali caso morte e CPI in essere.</p>
+ <h2>Aree di intervento ${sel.length?'proposte':'rilevate'}</h2>${ops.length?'<ul>'+ops.map(o=>`<li><b>${esc(o.t)}</b> – ${esc(o.d)}</li>`).join('')+'</ul>':'<p>Nessuna area rilevata.</p>'}
+ ${c.propNote?`<h3>Note</h3><p>${esc(c.propNote).replace(/\n/g,'<br>')}</p>`:''}
+ <p class="disc">${esc(disclaimer())}<br><br>${esc(FIRMA)}</p></body></html>`;
+ const fn='Scheda_'+(fullName(c).replace(/[^\wÀ-ÿ]+/g,'_'))+'_'+today()+'.html';
+ if(store.dl||!window.claude){saveFile(fn,html).then(()=>toast('Scheda salvata'),()=>toast('Download annullato'));return}
+ navigator.clipboard.writeText(testoScheda()).then(()=>toast('Download non disponibile: testo copiato'),()=>toast('Download non disponibile in questa vista'));
+}
+function testoScheda(){
+ const c=S.cur,A=analizza(c);const sel=A.O.filter(o=>(c.prop||{})[o.k]);const ops=sel.length?sel:A.O;
+ return[`SCHEDA DI SINTESI – ${fullName(c)}`,`Aggiornata al ${todayIT()}`,'',
+ `Età: ${A.eta??'n.d.'} · Profilo: ${c.profilo||'n.d.'} · Orizzonte: ${c.orizzonte||'n.d.'}`,
+ `Patrimonio netto: ${eur(A.netto)} (attività ${eur(A.totAtt)}, passività ${eur(A.totPas)}); finanziario ${eur(A.fin)}`,
+ `Reddito netto annuo: ${eur(A.reddito)} · Spese mensili: ${eur(A.spese)}`,
+ `Fabbisogno caso morte: ${eur(A.fabb)} · Già assicurato: ${eur(A.tcmEs)} · Scopertura: ${eur(A.gap)}`,'',
+ 'AREE DI INTERVENTO:',...ops.map(o=>`• ${o.t}: ${o.d}`),c.propNote?'\nNote: '+c.propNote:'','',disclaimer(),'',FIRMA].join('\n');
+}
+
+boot();
+if('serviceWorker' in navigator&&!window.claude&&location.protocol==='https:'&&window.top===window){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
