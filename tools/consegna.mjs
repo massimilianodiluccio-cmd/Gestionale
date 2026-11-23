@@ -26,7 +26,9 @@ const files = docs.map(p => {
   if (buf.length > 8 * 1024 * 1024) throw new Error('File oltre 8 MB: ' + p);
   return { nome: scheda.nomiFile?.[basename(p)] || basename(p), tipo, size: buf.length, data: buf.toString('base64') };
 });
-const payload = { provenienza: scheda.provenienza || '', extra: scheda.extra || '', cliente: scheda.cliente || {}, files };
+const payload = scheda.tipo === 'cf'
+  ? { tipo: 'cf', consulenti: scheda.consulenti || [] }
+  : { provenienza: scheda.provenienza || '', extra: scheda.extra || '', cliente: scheda.cliente || {}, files };
 const aes = await subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
 const iv = getRandomValues(new Uint8Array(12));
 const ct = Buffer.from(await subtle.encrypt({ name: 'AES-GCM', iv }, aes, new TextEncoder().encode(JSON.stringify(payload))));
