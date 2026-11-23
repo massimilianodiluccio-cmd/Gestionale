@@ -43,3 +43,5 @@ Executive Manager (Piano EM 2026): pulsante "Bonus EM 2026" nella sezione. Obiet
 consuntivi dalla somma della squadra se vuoti, CF attivi = CF sopra la prima soglia del proprio cluster per pista, reclutamenti.
 Consegna: nel JSON tipo "cf" aggiungi `"em":{"nome","data","obt":{...},"act":{...},"recl":[{"nome","rn","valido","bm":30|0|-30,"u45"}]}`.
 Verificato con gli esempi di reclutamento del piano (1.250 / 6.000 / 12.000 €).
+Se cambi la struttura dei pacchetti o l'app deve essere aggiornata prima di leggerli, aumenta APP_V in index.html
+e "appVersion" in inbox/index.json: le versioni vecchie mostrano "Nuova versione dell'app: tocca per aggiornare".
