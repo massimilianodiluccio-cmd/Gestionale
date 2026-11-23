@@ -1110,6 +1110,7 @@ ${R.m20on?`<tr><td>Raccolta evoluta ≥ raccolta netta con netta da ${fmtK(P.fas
  <tr><th colspan="2">Bonus con maggiorazioni${R.pct?' (+'+R.pct+'%)':''}</th><th class="n">${eur(R.lordo)}</th></tr>
  ${R.capped?`<tr><td colspan="2">Tetto massimo del cluster</td><td class="n">${eur(R.cap)}</td></tr>`:''}
  <tr><th colspan="2">BONUS MATURANDO</th><th class="n">${eur(R.bonus)}</th></tr></table>
+ <h2>Commento e scostamenti</h2>${cfComment(c).map(p=>`<p>${p}</p>`).join('')}
  ${H.length?`<h2>Prossimi traguardi</h2><ul>${H.map(h=>`<li><b>${esc(h.t)}</b>: ${esc(h.d)}</li>`).join('')}</ul>`:''}
  ${c.note?`<h2>Note</h2><p>${esc(c.note).replace(/\n/g,'<br>')}</p>`:''}
  <p style="font-size:11.5px;color:#555;margin-top:18px">Metodo: ${P.metodo==='fascia'?'aliquota della fascia raggiunta applicata all\'intera raccolta della pista':'calcolo per scaglioni'}; maggiorazioni ${P.cumulo==='somma'?'sommate':'moltiplicate'}; tetto bonus ${eur(R.cap)}${c.opPart?' (con operazioni particolari)':''}. Raccolta in migliaia di euro come da regolamento.</p>
@@ -1133,9 +1134,10 @@ function cfTeam(){
  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – Squadra</title><style>${REP_CSS}</style></head><body>
  <div class="band"><div class="k">INCENTIVAZIONE 2026 · RIEPILOGO DI SQUADRA</div><h1>I risultati della <em>squadra</em></h1><div>${L.length} consulenti finanziari · elaborato al ${todayIT()}</div></div><div class="in">
  <div class="big"><div><b>${eur(sum('bonus'))}</b>Bonus maturando complessivo</div><div><b>${fmtK(sum('rn'))}</b>Raccolta netta</div><div><b>${fmtK(sum('revo'))}</b>Raccolta evoluta</div></div>
- <h2>Dettaglio per consulente</h2><table><tr><th>#</th><th>Consulente</th><th>Raccolta netta</th><th>Raccolta evoluta</th><th>RN assicurativa</th><th>Maggior.</th><th>Bonus maturando</th></tr>
- ${L.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.c.nome)}</td><td class="n">${fmtK(x.R.rn)}</td><td class="n">${fmtK(x.R.revo)}</td><td class="n">${fmtK(x.R.ass)}</td><td>${x.R.pct?'+'+x.R.pct+'%':'–'}</td><td class="n"><b>${eur(x.R.bonus)}</b></td></tr>`).join('')}
- <tr><th colspan="2">Totale</th><th class="n">${fmtK(sum('rn'))}</th><th class="n">${fmtK(sum('revo'))}</th><th class="n">${fmtK(sum('ass'))}</th><th></th><th class="n">${eur(sum('bonus'))}</th></tr></table>
+ <h2>Commento</h2>${teamComment(L).map(p=>`<p>${p}</p>`).join('')}
+ <h2>Dettaglio per consulente</h2><table><tr><th>#</th><th>Consulente</th><th>Raccolta netta</th><th>Raccolta evoluta</th><th>RN assicurativa</th><th>Maggior.</th><th>Bonus maturando</th><th>Scostamento dal prossimo traguardo</th></tr>
+ ${L.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.c.nome)}</td><td class="n">${fmtK(x.R.rn)}</td><td class="n">${fmtK(x.R.revo)}</td><td class="n">${fmtK(x.R.ass)}</td><td>${x.R.pct?'+'+x.R.pct+'%':'–'}</td><td class="n"><b>${eur(x.R.bonus)}</b></td><td style="font-size:11.5px">${esc((cfHints(x.c)[0]||{t:'fascia massima raggiunta'}).t)}</td></tr>`).join('')}
+ <tr><th colspan="2">Totale</th><th class="n">${fmtK(sum('rn'))}</th><th class="n">${fmtK(sum('revo'))}</th><th class="n">${fmtK(sum('ass'))}</th><th></th><th class="n">${eur(sum('bonus'))}</th><th></th></tr></table>
  <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div><button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
  repBox('Riepilogo di <em>squadra</em>',html,'Incentivazione_2026_squadra_'+today()+'.html');
 }
@@ -1219,6 +1221,7 @@ function emReportHTML(){
  <tr><td>CF attivi (Tabella A: 100% da 80%)</td><td class="n">${A.aRN}/${A.nCF} = ${pcs(X.attRN)} → ×${Math.round(X.fRN.att*100)}%</td><td class="n">${A.aEVO}/${A.nCF} = ${pcs(X.attEVO)} → ×${Math.round(X.fEVO.att*100)}%</td></tr>
  <tr><th>Bonus maturando per pista</th><th class="n">${eur(X.bRN)}</th><th class="n">${eur(X.bEVO)}</th></tr></table>
  <h2>Reclutamento 2026</h2>${X.recDet.length?`<table><tr><th>Reclutato</th><th>RN considerata</th><th>Base</th><th>Variazioni</th><th>Bonus</th></tr>${X.recDet.map(x=>`<tr><td>${esc(x.nome||'Reclutato')}</td><td class="n">${fmtK(x.rnC)}</td><td class="n">${eur(x.base)}</td><td>${[num(x.bm)?((num(x.bm)>0?'+':'')+num(x.bm)+'% costo ex ante'):'',x.u45?'+20% under 45':''].filter(Boolean).join(', ')||'–'}</td><td class="n">${eur(x.bon)}</td></tr>`).join('')}<tr><th colspan="4">RN da reclutamenti validi ${fmtK(X.rnRec)} · ${X.nv} validi · aliquota ${String(X.aliq).replace('.',',')}%${X.bRec>40000?' · tetto 40.000 €':''}</th><th class="n">${eur(X.bRecCap)}</th></tr></table>`:'<p>Nessun reclutamento valido inserito: obiettivo 20 mln con 2 reclutamenti validi, bonus massimo 40.000 €.</p>'}
+ <h2>Commento e scostamenti</h2>${emComment().map(p=>`<p>${p}</p>`).join('')}
  ${H.length?`<h2>Prossimi traguardi</h2><ul>${H.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}
  <p style="font-size:11.5px;color:#555;margin-top:18px">Tabella bonus 2026: 60-85% 10.000+10.000; 85-100% 17.500+17.500; 100-120% 21.000+24.000; 120-140% 23.000+27.000; 140-160% 25.000+35.000; oltre 160% 27.000+43.000 (netta+evoluta). Struttura esistente: ≥70% 100%, 50-70% 75%, 0-50% 65%, negativa 55%. Tabella A CF attivi: ≥80% 100%, 65-80% 75%, 50-65% 50%, sotto 50% 0%. La raccolta personale dell'EM non concorre. Bonus soggetto a gate d'accesso, regole di correttezza e consolidamento a maggio 2027.</p>
  <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div>
@@ -1226,6 +1229,54 @@ function emReportHTML(){
 }
 function emReport(){const e=emData();repBox(`Bonus <em>EM 2026</em>`,emReportHTML(),'Incentivazione_EM_2026_'+e.nome.replace(/[^\wÀ-ÿ]+/g,'_')+'_'+today()+'.html');
  setTimeout(()=>{const r=document.querySelector('#modal .row');if(r&&!$('#emedit2')){const b=document.createElement('button');b.className='btn';b.id='emedit2';b.textContent='Modifica dati';b.dataset.a='emedit';r.insertBefore(b,r.firstChild.nextSibling)}},0)}
+/* ---------- Commenti automatici con scostamenti ---------- */
+const sgn=v=>(v>=0?'+':'−')+eur(Math.abs(v)).replace(/^-/,'');
+const pp=v=>(v>=0?'+':'−')+(Math.round(Math.abs(v)*10)/10).toLocaleString('it-IT')+'%';
+function pistaComment(lab,v,P,evo){
+ const FA=P.fasce,f=fasciaDi(v,P),n=FA.find(x=>x.da>v),s0=FA[0].da;
+ if(!f)return `<b>${lab}</b>: ${fmtK(v)}, sotto la soglia di accesso di ${fmtK(s0)}. Scostamento dalla soglia ${sgn((v-s0)*1000)} (${pp((v-s0)/s0*100)}): su questa pista il bonus oggi è zero.`;
+ const marg=v-f.da;let t=`<b>${lab}</b>: ${fmtK(v)}, nella fascia da ${fmtK(f.da)} con aliquota ${fmtPct(rateOf(f,evo))}. Margine sopra la soglia della fascia ${sgn(marg*1000)} (${pp(marg/f.da*100)})`;
+ t+=n?`; per la fascia successiva (${fmtK(n.da)}, ${fmtPct(rateOf(n,evo))}) lo scostamento è ${sgn((v-n.da)*1000)} (${pp((v-n.da)/n.da*100)}).`:'; è la fascia massima.';
+ if(marg<f.da*0.1)t+=' Attenzione: il margine è ridotto, un disinvestimento può far scendere di fascia.';
+ return t}
+function cfComment(c){
+ const R=calcCF(c),P=R.P,out=[],H=cfHints(c);
+ out.push(`Al ${fmtD(c.data)} ${esc(c.nome)} matura un bonus di <b>${eur(R.bonus)}</b>: ${eur(R.bRN)} sulla raccolta netta e ${eur(R.bEVO)} sulla raccolta evoluta${R.pct?`, con maggiorazioni complessive del ${R.pct}%`:''}.`);
+ out.push(pistaComment('Raccolta netta',R.rn,P,false));
+ out.push(pistaComment('Raccolta evoluta',R.revo,P,true));
+ if(R.neg){const lost=bonusPista(R.revo,P,true)*P.ridNeg/100;out.push(`La raccolta netta è negativa (${fmtK(R.rn)}): il bonus sull'evoluta è ridotto del ${P.ridNeg}%${lost>0?`, con un minor bonus di ${eur(lost)}`:', anche quando l\'evoluta raggiungerà la soglia'}.`)}
+ if(!R.m20on)out.push(`Il cluster ${esc(c.cluster)} non prevede la maggiorazione del ${P.m20}%.`);
+ else if(R.ok20)out.push(`Maggiorazione +${P.m20}% <b>raggiunta</b>: ${R.revo>=R.rn?`l'evoluta supera la netta di ${eur((R.revo-R.rn)*1000)}`:`evoluta oltre ${fmtK(P.revoAlt)} con netta sopra soglia`}.`);
+ else out.push(`Maggiorazione +${P.m20}% <b>non raggiunta</b>: ${R.rn<P.fasce[0].da?`la netta è sotto la soglia di ${fmtK(P.fasce[0].da)} (scostamento ${sgn((R.rn-P.fasce[0].da)*1000)})`:`l'evoluta è inferiore alla netta di ${eur((R.rn-R.revo)*1000)} (scostamento ${pp((R.revo-R.rn)/R.rn*100)})`}.`);
+ out.push(R.ok10?`Maggiorazione +${P.m10}% assicurativa <b>raggiunta</b>: ${fmtK(R.ass)}, ${sgn((R.ass-P.assSoglia)*1000)} sopra la soglia di ${fmtK(P.assSoglia)}.`:`Maggiorazione +${P.m10}% assicurativa <b>non raggiunta</b>: ${fmtK(R.ass)} contro ${fmtK(P.assSoglia)}, scostamento ${sgn((R.ass-P.assSoglia)*1000)}.`);
+ if(R.capped)out.push(`Il bonus è limitato dal tetto del cluster (${eur(R.cap)}): ${eur(R.lordo-R.cap)} non riconosciuti.`);
+ if(H[0])out.push(`<b>Priorità</b>: ${esc(H[0].t)} (${esc(H[0].d)}).`);
+ return out}
+function emComment(){
+ const X=calcEM(),o=X.o,A=X.A,out=[];
+ out.push(`Al ${fmtD(X.e.data)} il bonus maturando dell'Executive Manager è di <b>${eur(X.totale)}</b>: ${eur(X.bRN)} sulla raccolta netta, ${eur(X.bEVO)} sull'evoluta${X.bRecCap?` e ${eur(X.bRecCap)} sul reclutamento`:''}.`);
+ const sc=(lab,a,ob)=>num(ob)>0?`<b>${lab}</b>: ${fmtK(a)} su ${fmtK(num(ob))} (${pcs(a/num(ob)*100)}), scostamento ${sgn((a-num(ob))*1000)} (${pp((a-num(ob))/num(ob)*100)}).`:`<b>${lab}</b>: ${fmtK(a)}, obiettivo non indicato.`;
+ const band=(p,i)=>{let lo=null,hi=null;for(const t of EM_TAB){if(p>=t[0])lo=t[0];else if(hi==null)hi=t[0]}return lo==null?` Sotto il 60%: nessun bonus; mancano ${(Math.round((60-p)*10)/10).toLocaleString('it-IT')} punti percentuali.`:` È nella fascia ${lo===85?"dall'":'dal '}${lo}%${hi?` al ${hi}% (mancano ${(Math.round((hi-p)*10)/10).toLocaleString('it-IT')} punti per la successiva)`:' (fascia massima)'}, con margine di ${(Math.round((p-lo)*10)/10).toLocaleString('it-IT')} punti sopra la soglia.`};
+ out.push(sc('Raccolta netta totale',A.rn,o.rn)+(X.pRN!=null?band(X.pRN,1):''));
+ out.push(sc('RN da struttura esistente',A.rnSE,o.rnSE)+(X.pRNse!=null?` Coefficiente applicato ${Math.round(X.fRN.se*100)}%${X.pRNse>=70?` (margine di ${(Math.round((X.pRNse-70)*10)/10).toLocaleString('it-IT')} punti sopra il 70%)`:''}.`:''));
+ out.push(sc('Raccolta evoluta totale',A.evo,o.evo)+(X.pEVO!=null?band(X.pEVO,2):''));
+ out.push(sc('Evoluta da struttura esistente',A.evoSE,o.evoSE)+(X.pEVOse!=null?` Coefficiente applicato ${Math.round(X.fEVO.se*100)}%.`:''));
+ out.push(sc('RN incentivata assicurativa',A.ass,o.ass)+(X.assF>1?' Obiettivo raggiunto: +10% su netta ed evoluta.':A.ass<0?' Assicurativa negativa: riduzione del 20%.':' Obiettivo non raggiunto: nessuna maggiorazione, ma nessuna riduzione perché positiva.'));
+ const miss=CF.consulenti.map(c=>({c,R:calcCF(c)})).filter(x=>x.R.rn<x.R.P.fasce[0].da).sort((a,b)=>(a.R.P.fasce[0].da-a.R.rn)-(b.R.P.fasce[0].da-b.R.rn));
+ out.push(`<b>CF attivi sulla netta</b>: ${A.aRN} su ${A.nCF} (${pcs(X.attRN)}), coefficiente ${Math.round(X.fRN.att*100)}%.${X.attRN<80?` Scostamento dall'80%: ${Math.ceil(.8*A.nCF)-A.aRN} CF.`:''}${miss.length?` Non ancora a target: ${miss.map(x=>`${esc(x.c.nome)} (mancano ${eur((x.R.P.fasce[0].da-x.R.rn)*1000)})`).join(', ')}.`:''}`);
+ const missE=CF.consulenti.map(c=>({c,R:calcCF(c)})).filter(x=>x.R.revo<x.R.P.fasce[0].da);
+ out.push(`<b>CF attivi sull'evoluta</b>: ${A.aEVO} su ${A.nCF} (${pcs(X.attEVO)}), coefficiente ${Math.round(X.fEVO.att*100)}%.${missE.length?` Non ancora a target: ${missE.map(x=>`${esc(x.c.nome)} (mancano ${eur((x.R.P.fasce[0].da-x.R.revo)*1000)})`).join(', ')}.`:''}`);
+ out.push(X.nv?`<b>Reclutamento</b>: ${X.nv} reclutamenti validi per ${fmtK(X.rnRec)} contro l'obiettivo di 20 mln con 2 validi; scostamento ${sgn((X.rnRec-20000)*1000)}.`:`<b>Reclutamento</b>: nessun reclutamento valido; l'obiettivo è 20 mln con 2 reclutamenti validi (bonus fino a 40.000 €).`);
+ return out}
+function teamComment(L){
+ const tot=L.reduce((s,x)=>s+x.R.bonus,0),aRN=L.filter(x=>x.R.rn>=x.R.P.fasce[0].da).length,aEV=L.filter(x=>x.R.revo>=x.R.P.fasce[0].da).length,neg=L.filter(x=>x.R.rn<0);
+ const top=L[0],out=[];
+ out.push(`La squadra matura complessivamente <b>${eur(tot)}</b> di bonus (media ${eur(tot/L.length)} per consulente). ${aRN} consulenti su ${L.length} sono a premio sulla raccolta netta e ${aEV} sull'evoluta.`);
+ if(top)out.push(`Il bonus più alto è di ${esc(top.c.nome)} (${eur(top.R.bonus)}); ${L.filter(x=>x.R.pct>0).length} consulenti hanno almeno una maggiorazione.`);
+ if(neg.length)out.push(`Raccolta netta negativa per ${neg.map(x=>esc(x.c.nome)).join(', ')}: per loro il bonus sull'evoluta è dimezzato.`);
+ const near=L.map(x=>({x,h:cfHints(x.c)[0]})).filter(z=>z.h).sort((a,b)=>num(b.h.d.replace(/\D/g,''))-num(a.h.d.replace(/\D/g,''))).slice(0,3);
+ if(near.length)out.push(`Maggiori opportunità entro fine anno: ${near.map(z=>`${esc(z.x.c.nome)} – ${esc(z.h.t.toLowerCase())} (${esc(z.h.d)})`).join('; ')}.`);
+ return out}
 async function mergeCF(pay){
  let n=0,u=0;for(const x of (pay.consulenti||[])){if(!x||!x.nome)continue;const vals={cod:String(x.cod??''),cluster:CLUSTERS.includes(x.cluster)?x.cluster:'PTF 20-50 mln',rn:String(x.rn??''),revo:String(x.revo??''),ass:String(x.ass??''),data:x.data||today(),opPart:!!x.opPart};
   const lc=v=>String(v||'').toLowerCase().trim();const ex=CF.consulenti.find(c=>x.cod&&c.cod&&String(c.cod)===String(x.cod))||CF.consulenti.find(c=>lc(c.nome)===lc(x.nome))||CF.consulenti.find(c=>x.alias&&lc(c.nome)===lc(x.alias));if(ex){Object.assign(ex,vals);ex.nome=String(x.nome);if(x.note)ex.note=x.note;u++}else{CF.consulenti.push({id:'cf'+uid(),nome:String(x.nome),note:x.note||'',...vals});n++}}
