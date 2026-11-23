@@ -382,8 +382,9 @@ function renderList(){
  <div class="row" style="margin-bottom:10px"><input id="q" class="grow" placeholder="Cerca nome, codice fiscale, azienda…" value="${esc(S.q)}" style="min-width:180px;flex:1">
   <select id="filtro" style="width:auto">${['Tutti','Prospect','Cliente','Ex cliente'].map(o=>`<option ${o===S.filtro?'selected':''}>${o}</option>`).join('')}</select>
   <select id="ord" style="width:auto"><option value="nome" ${S.ord==='nome'?'selected':''}>A-Z</option><option value="netto" ${S.ord==='netto'?'selected':''}>Patrimonio</option><option value="upd" ${S.ord==='upd'?'selected':''}>Recenti</option></select>
-  <button class="btn" data-a="newvoice" title="Nuovo cliente da dettatura">${MIC} Detta</button><button class="btn pri" data-a="new">+ Nuovo</button></div>
- <div class="card list" style="padding:0">${rows.length?rows.map(c=>{const A=an[c.id];return`<div class="it" data-a="open" data-id="${c.id}"><div class="av">${esc(initials(c))}</div><div class="grow"><div class="nm">${esc(fullName(c))}</div><div class="sub">${[A.eta!==null?A.eta+' anni':'',c.professione||c.lavoro&&c.lavoro!=='—'&&c.lavoro||'',(c.az||[])[0]?.ragione||''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div></div><div style="text-align:right"><div class="nm" style="color:var(--gold2)">${eur(A.netto)}</div><div class="row" style="justify-content:flex-end;gap:4px;margin-top:2px"><span class="badge ${c.stato==='Cliente'?'g':''}">${esc(c.stato||'Prospect')}</span>${A.O.length?`<span class="badge r">${A.O.length} opp.</span>`:''}</div></div></div>`}).join(''):`<div class="empty" style="padding:18px">${cl.length?'Nessun risultato.':'Nessun cliente in archivio. Tocca “+ Nuovo” per iniziare.'}</div>`}</div>
+  <button class="btn" data-a="newvoice" title="Nuovo cliente da dettatura">${MIC} Detta</button></div>
+ <div class="row" style="margin-bottom:10px"><button class="btn pri grow" data-a="new" data-stato="Cliente">+ Nuovo cliente</button><button class="btn pri grow" data-a="new" data-stato="Prospect">+ Nuovo prospect</button></div>
+ <div class="card list" style="padding:0">${rows.length?rows.map(c=>{const A=an[c.id];return`<div class="it" data-a="open" data-id="${c.id}"><div class="av">${esc(initials(c))}</div><div class="grow"><div class="nm">${esc(fullName(c))}</div><div class="sub">${[A.eta!==null?A.eta+' anni':'',c.professione||c.lavoro&&c.lavoro!=='—'&&c.lavoro||'',(c.az||[])[0]?.ragione||''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div></div><div style="text-align:right"><div class="nm" style="color:var(--gold2)">${eur(A.netto)}</div><div class="row" style="justify-content:flex-end;gap:4px;margin-top:2px"><span class="badge ${c.stato==='Cliente'?'g':''}">${esc(c.stato||'Prospect')}</span>${A.O.length?`<span class="badge r">${A.O.length} opp.</span>`:''}</div></div><button class="btn ico ghost" data-a="menu" data-id="${c.id}" title="Gestisci scheda" aria-label="Gestisci scheda di ${esc(fullName(c))}" style="margin-right:-8px;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div>`}).join(''):`<div class="empty" style="padding:18px">${cl.length?'Nessun risultato.':'Nessuna scheda in archivio. Tocca “+ Nuovo cliente” o “+ Nuovo prospect” per iniziare.'}</div>`}</div>
  <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button></div>
  <p class="disc">Archivio cifrato con la tua password. Si blocca da solo dopo ${LOCK_MIN} minuti di inattività.</p></div>`;
  const qi=$('#q');qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;renderList();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
@@ -419,7 +420,7 @@ function liveSummary(){
 function tabBody(){
  const c=S.cur,t=S.tab;
  if(t==='anag')return`<div class="lbl">Dati anagrafici</div><div class="card"><div class="grid">${F.anag.map(f=>field(f,c)).join('')}</div></div>
-  <div style="margin-top:16px" class="row"><button class="btn sm" data-a="auguri" data-id="${c.id}">Messaggio di auguri WhatsApp</button></div><div style="margin-top:26px" class="row"><button class="btn sm del" data-a="delclient">Elimina cliente</button></div>`;
+  <div style="margin-top:16px" class="row"><button class="btn sm" data-a="auguri" data-id="${c.id}">Messaggio di auguri WhatsApp</button></div><div style="margin-top:26px" class="row"><button class="btn sm del" data-a="delclient">Elimina scheda</button></div>`;
  if(t==='fam')return`<div id="live">${liveSummary()}</div>${arrBlock('fam','Aggiungi familiare')}`;
  if(t==='lav')return`<div id="live">${liveSummary()}</div><div class="lbl">Lavoro e redditi</div><div class="card"><div class="grid">${F.lav.map(f=>field(f,c)).join('')}</div></div>${arrBlock('az','Aggiungi azienda')}`;
  if(t==='pat')return`<div id="live">${liveSummary()}</div>${arrBlock('att','Aggiungi attività')}${arrBlock('pas','Aggiungi passività')}`;
@@ -448,7 +449,7 @@ function anaBody(){
 }
 function renderClient(){
  const c=S.cur;
- $('#app').innerHTML=topbar(`<span id="ttl">${esc(fullName(c))}</span>`,`<button class="btn ico" data-a="back" title="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn ico" data-a="coll" title="Colloquio" aria-label="Avvia colloquio">${CHAT_ICO}</button><button class="btn ico" data-a="voice" title="Inserimento vocale" aria-label="Inserimento vocale">${MIC}</button><button class="btn ico" data-a="lock" title="Blocca">🔒</button>`)+
+ $('#app').innerHTML=topbar(`<span id="ttl">${esc(fullName(c))}</span>`,`<button class="btn ico" data-a="back" title="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span><button class="btn ico" data-a="coll" title="Colloquio" aria-label="Avvia colloquio">${CHAT_ICO}</button><button class="btn ico" data-a="voice" title="Inserimento vocale" aria-label="Inserimento vocale">${MIC}</button><button class="btn ico" data-a="menu" data-id="${c.id}" title="Gestisci scheda" aria-label="Gestisci scheda"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>`)+
  `<div class="wrap"><div class="tabs">${TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-a="tab" data-k="${k}">${l}</button>`).join('')}</div><div id="tab">${tabBody()}</div></div>`;
 }
 function rerenderTab(){const y=scrollY;$('#tab').innerHTML=tabBody();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.k===S.tab));scrollTo(0,y)}
@@ -472,7 +473,7 @@ document.addEventListener('click',async e=>{
  if(a==='retry')return loadVault();
  if(a==='setup')return doSetup();
  if(a==='lock')return lock();
- if(a==='new'){newClient();setTimeout(()=>{const n=document.querySelector('[data-f="nome"]');n&&n.focus()},60);return}
+ if(a==='new'){newClient(b.dataset.stato);setTimeout(()=>{const n=document.querySelector('[data-f="nome"]');n&&n.focus()},60);return}
  if(a==='newvoice'){newClient();voiceBox(true);return}
  if(a==='voice')return voiceBox(false);
  if(a==='coll')return collBox();
@@ -492,7 +493,8 @@ document.addEventListener('click',async e=>{
  if(a==='tab'){S.tab=b.dataset.k;rerenderTab();scrollTo(0,0);return}
  if(a==='addrow'){const k=b.dataset.k;const r={};if(k==='note')r.data=today();if(k==='att')r.cat='Liquidità';if(k==='pas')r.tipo='Mutuo';if(k==='cop')r.tipo=COPS[0];if(k==='ban')r.tipo='Conto corrente';if(k==='fam')r.rel='Coniuge';if(k==='int')r.cat='Calcio';if(k==='ric'){r.tipo='Anniversario di matrimonio';r.annuale=true}(S.cur[k]=S.cur[k]||[]).push(r);touch();rerenderTab();const cards=document.querySelectorAll('.rowcard');const last=[...cards].filter(x=>x.querySelector(`[data-f^="${k}."]`)).pop();last&&last.scrollIntoView({behavior:'smooth',block:'center'});return}
  if(a==='delrow'){const k=b.dataset.k,i=+b.dataset.i;confirmBox('Eliminare questo elemento?',()=>{S.cur[k].splice(i,1);touch();rerenderTab()});return}
- if(a==='delclient'){confirmBox(`Eliminare definitivamente la scheda di ${fullName(S.cur)}?`,async()=>{const id=S.cur.id;dirty.delete(id);try{await saving;for(const d of (S.cur.docs||[]))for(let i=0;i<d.n;i++)await store.delChunk(d.id+'_'+i).catch(()=>{});await store.del('c_'+id)}catch(err){toast('Eliminazione non riuscita');return}delete S.clients[id];delete S.raw['c_'+id];S.cur=null;S.view='list';render();toast('Cliente eliminato')});return}
+ if(a==='delclient')return askDelete(S.cur);
+ if(a==='menu')return menuBox(S.clients[b.dataset.id]);
  if(a==='scheda')return scaricaScheda();
  if(a==='copytxt'){try{await navigator.clipboard.writeText(testoScheda());toast('Testo copiato')}catch(err){toast('Copia non consentita in questa vista')}return}
  if(a==='backup')return backupBox();
@@ -538,7 +540,7 @@ async function importa(data,pw){
 }
 
 /* ================== Inserimento vocale ================== */
-function newClient(){const c={id:uid(),stato:'Prospect',created:Date.now(),updated:Date.now(),fam:[],int:[],ric:[],az:[],att:[],pas:[],ban:[],cop:[],note:[]};S.clients[c.id]=c;S.cur=c;S.tab='anag';dirty.add(c.id);flush();S.view='client';render();scrollTo(0,0);return c}
+function newClient(stato){const c={id:uid(),stato:['Cliente','Prospect','Ex cliente'].includes(stato)?stato:'Prospect',created:Date.now(),updated:Date.now(),fam:[],int:[],ric:[],az:[],att:[],pas:[],ban:[],cop:[],note:[]};S.clients[c.id]=c;S.cur=c;S.tab='anag';dirty.add(c.id);flush();S.view='client';render();scrollTo(0,0);return c}
 const V_SCALAR=[...F.anag,...F.lav];
 const V_ARR=['fam','int','ric','az','att','pas','ban','cop'];
 function specLine(f){const[k,l,t='text',o]=f;return`  ${k}: ${l}`+(t==='sel'?` — una tra: ${o.filter(x=>x!=='—').join(' | ')}`:t==='num'?' — numero':t==='date'?' — data AAAA-MM-GG':t==='bool'?' — true/false':'')}
@@ -750,6 +752,34 @@ function eventiBox(){
   await saveEventi();toast(n+' eventi importati');eventiBox();if(S.view==='list')renderList()};
  document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=async()=>{S.eventi=S.eventi.filter(e=>e.id!==b.dataset.ev);await saveEventi();eventiBox();if(S.view==='list')renderList()});
  if($('#epast'))$('#epast').onclick=async()=>{S.eventi=S.eventi.filter(e=>daysTo(e.data)>=0);await saveEventi();eventiBox();if(S.view==='list')renderList()};
+}
+
+/* ================== Gestione schede ================== */
+function menuBox(c){
+ if(!c)return;const inCli=S.view==='client';const st=c.stato||'Prospect';
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold"><div class="lbl" style="margin-top:0">Gestisci scheda</div><h2 style="font-size:22px">${esc(fullName(c))}</h2>
+ <div class="row" style="margin:14px 0 4px;flex-direction:column;align-items:stretch;gap:8px">
+  ${inCli?'':`<button class="btn" id="m_edit">Modifica scheda</button>`}
+  <div class="sub" style="margin-top:6px">Tipo di scheda</div>
+  <div class="row" style="gap:6px">${['Prospect','Cliente','Ex cliente'].map(x=>`<button class="btn sm grow ${x===st?'pri':''}" data-st="${x}">${x}</button>`).join('')}</div>
+  <button class="btn" id="m_dup" style="margin-top:6px">Duplica come nuova scheda</button>
+  <button class="btn del" id="m_del">Elimina scheda</button>
+  ${inCli?`<button class="btn ghost" id="m_lock">Blocca archivio</button>`:''}
+ </div><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
+ if($('#m_edit'))$('#m_edit').onclick=()=>{closeModal();S.cur=c;S.tab='anag';S.view='client';setStatus('');render();scrollTo(0,0)};
+ document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{c.stato=b.dataset.st;markDirty(c);closeModal();toast('Scheda impostata come '+c.stato);if(S.view==='client')rerenderTab();else renderList()});
+ $('#m_dup').onclick=()=>{const n=JSON.parse(JSON.stringify(c));n.id=uid();n.created=n.updated=Date.now();n.nome=(n.nome||'')+' (copia)';n.docs=[];n.contatti={};delete n.bozzaColl;delete n.auguri;S.clients[n.id]=n;dirty.add(n.id);flush();closeModal();S.cur=n;S.tab='anag';S.view='client';render();scrollTo(0,0);toast('Copia creata (senza documenti)')};
+ $('#m_del').onclick=()=>askDelete(c);
+ if($('#m_lock'))$('#m_lock').onclick=()=>{closeModal();lock()};
+}
+function askDelete(c){
+ if(!c)return;const nd=(c.docs||[]).length;
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold"><h2 style="font-size:22px">Eliminare la <em>scheda</em>?</h2>
+ <p class="note" style="margin:10px 0">Stai per eliminare definitivamente la scheda di <b>${esc(fullName(c))}</b>${nd?` e i suoi ${nd} documenti allegati`:''}. L'operazione non si può annullare: se vuoi conservarla, fai prima un backup.</p>
+ <div class="row" style="justify-content:flex-end"><button class="btn" data-a="modalclose">Annulla</button><button class="btn pri" id="okdel" style="background:#8f1d2c">Elimina definitivamente</button></div></div></div>`;
+ $('#okdel').onclick=async()=>{const id=c.id;dirty.delete(id);$('#okdel').disabled=true;
+  try{await saving;for(const d of (c.docs||[]))for(let i=0;i<d.n;i++)await store.delChunk(d.id+'_'+i).catch(()=>{});await store.del('c_'+id)}catch(err){closeModal();toast('Eliminazione non riuscita');return}
+  delete S.clients[id];delete S.raw['c_'+id];if(S.cur===c)S.cur=null;closeModal();S.view='list';render();toast('Scheda eliminata')};
 }
 
 /* ================== Colloquio: trascrizione continua ================== */
