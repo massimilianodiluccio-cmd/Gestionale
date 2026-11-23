@@ -26,3 +26,10 @@ quando modifichi l'app, ripubblica lì lo stesso file.
 
 ## Ogni elaborato per i clienti
 Disclaimer obbligatorio con la data del giorno; firma "Massimiliano Di Luccio".
+
+## Schede inviate dall'app a Claude
+Nell'app: menu ⋮ della scheda → "Invia a Claude" copia un testo che inizia con
+`SCHEDA DALL'APP ARCHIVIO CLIENTI` e termina con un blocco ```json {"archivio":"scheda-app","cliente":{...}}```.
+Usalo come fonte per proposte, analisi, relazioni. Per rimandare dati nuovi all'app usa la consegna (inbox/):
+l'import aggiunge dati e righe nuove ma NON sovrascrive campi già compilati (per correzioni, dillo all'utente).
+I documenti arrivano dall'app con "Condividi" (sezione Documenti).
