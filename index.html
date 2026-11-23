@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Archivio Clienti – Gestionale</title>
 <meta name="theme-color" content="#151517">
 <link rel="manifest" href="manifest.webmanifest">
@@ -10,13 +10,22 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Archivio">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,600&display=swap">
 <style>
 :root{--bg:#18191c;--bg2:#1f2024;--card:#25272c;--line:#383a40;--gold:#C9A26B;--gold2:#e2c595;--bord:#7d0c1e;--bord2:#C8102E;--text:#f3f1ec;--mut:#a7a39c;--ok:#7fb48a;--warn:#e0a458;--bad:#e06c6c}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;max-width:100vw}
+body{touch-action:manipulation;overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+.wrap,.card,.grid>*,.fld{min-width:0}
+.top{padding-top:calc(12px + env(safe-area-inset-top))!important;padding-left:calc(14px + env(safe-area-inset-left))!important;padding-right:calc(14px + env(safe-area-inset-right))!important}
+.wrap{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+.lock{padding-top:calc(20px + env(safe-area-inset-top))}
+.tabs{top:calc(61px + env(safe-area-inset-top))}
+.modal{padding-top:calc(18px + env(safe-area-inset-top));padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+input,select,textarea,button{font-size:16px}
+.sub,.note{overflow-wrap:anywhere}
 body{min-height:100vh}
 h1,h2,h3{font-family:"Playfair Display",Georgia,serif;font-weight:600;margin:0}
 h1 em,h2 em{color:var(--gold);font-style:italic}
@@ -42,7 +51,7 @@ button{font:inherit;cursor:pointer}
 .kpi .k{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .grow{flex:1}
-input,select,textarea{width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit;font-size:15px}
+input,select,textarea{width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 11px;font:inherit;font-size:16px;max-width:100%}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
 textarea{min-height:70px;resize:vertical}
 input[type=date]{color-scheme:dark}
@@ -260,8 +269,8 @@ async function doSetup(){
  try{await store.put('meta',meta)}catch(e){er.textContent='Salvataggio non riuscito: riprova.';return}
  S.meta=meta;S.key=key;S.clients={};S.view='list';render();
 }
-async function doUnlock(){
- const pw=$('#pw').value,er=$('#err');er.textContent='Verifica…';
+async function doUnlock(pwIn){
+ const pw=pwIn!=null?pwIn:$('#pw').value,er=$('#err');er.textContent='Verifica…';
  try{const key=await deriveKey(pw,unb64(S.meta.salt));await decJSON(key,S.meta);S.key=key}catch(e){er.textContent='Password errata.';return}
  S.clients={};let bad=0;
  for(const[id,v]of Object.entries(S.raw)){if(!id.startsWith('c_'))continue;try{const c=await decJSON(S.key,v);S.clients[c.id]=c}catch(e){bad++}}
@@ -339,8 +348,8 @@ function render(){
   <div class="grid" style="grid-template-columns:1fr;margin-top:14px"><label class="fld">Password<input id="pw1" type="password" autocomplete="new-password"></label><label class="fld">Ripeti password<input id="pw2" type="password" autocomplete="new-password"></label></div>
   <div class="err" id="err"></div><button class="btn pri" data-a="setup" style="width:100%;margin-top:8px">Crea archivio cifrato</button></div></div>`;return}
  if(S.view==='lock'){a.innerHTML=`<div class="lock"><div class="card gold"><div class="lbl">Archivio riservato</div><h1>Archivio <em>Clienti</em></h1><p class="note">Inserisci la password per aprire l'archivio.</p>
-  <form id="uf"><input id="pw" type="password" autocomplete="current-password" style="margin-top:12px" autofocus><div class="err" id="err"></div><button class="btn pri" style="width:100%;margin-top:8px">Apri</button></form>${modeBanner()}</div></div>`;
-  $('#uf').onsubmit=e=>{e.preventDefault();doUnlock()};setTimeout(()=>$('#pw')&&$('#pw').focus(),50);return}
+  <form id="uf"><input id="pw" type="password" autocomplete="current-password" style="margin-top:12px" autofocus><div class="err" id="err"></div><button class="btn pri" style="width:100%;margin-top:8px">Apri</button></form>${bioOn()?`<button class="btn" id="biobtn" style="width:100%;margin-top:10px">${FACE} Sblocca con ${BIO_NAME}</button>`:''}${modeBanner()}</div></div>`;
+  $('#uf').onsubmit=e=>{e.preventDefault();doUnlock()};if($('#biobtn'))$('#biobtn').onclick=bioUnlock;else setTimeout(()=>$('#pw')&&$('#pw').focus(),50);return}
  if(S.view==='list')return renderList();
  if(S.view==='client')return renderClient();
 }
@@ -385,7 +394,7 @@ function renderList(){
   <button class="btn" data-a="newvoice" title="Nuovo cliente da dettatura">${MIC} Detta</button></div>
  <div class="row" style="margin-bottom:10px"><button class="btn pri grow" data-a="new" data-stato="Cliente">+ Nuovo cliente</button><button class="btn pri grow" data-a="new" data-stato="Prospect">+ Nuovo prospect</button></div>
  <div class="card list" style="padding:0">${rows.length?rows.map(c=>{const A=an[c.id];return`<div class="it" data-a="open" data-id="${c.id}"><div class="av">${esc(initials(c))}</div><div class="grow"><div class="nm">${esc(fullName(c))}</div><div class="sub">${[A.eta!==null?A.eta+' anni':'',c.professione||c.lavoro&&c.lavoro!=='—'&&c.lavoro||'',(c.az||[])[0]?.ragione||''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div></div><div style="text-align:right"><div class="nm" style="color:var(--gold2)">${eur(A.netto)}</div><div class="row" style="justify-content:flex-end;gap:4px;margin-top:2px"><span class="badge ${c.stato==='Cliente'?'g':''}">${esc(c.stato||'Prospect')}</span>${A.O.length?`<span class="badge r">${A.O.length} opp.</span>`:''}</div></div><button class="btn ico ghost" data-a="menu" data-id="${c.id}" title="Gestisci scheda" aria-label="Gestisci scheda di ${esc(fullName(c))}" style="margin-right:-8px;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div>`}).join(''):`<div class="empty" style="padding:18px">${cl.length?'Nessun risultato.':'Nessuna scheda in archivio. Tocca “+ Nuovo cliente” o “+ Nuovo prospect” per iniziare.'}</div>`}</div>
- <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button></div>
+ <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button>${bioAvail()?`<button class="btn sm" data-a="bio">${FACE} ${bioOn()?'Sblocco biometrico attivo':'Attiva '+BIO_NAME}</button>`:''}</div>
  <p class="disc">Archivio cifrato con la tua password. Si blocca da solo dopo ${LOCK_MIN} minuti di inattività.</p></div>`;
  const qi=$('#q');qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;renderList();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
  $('#filtro').onchange=e=>{S.filtro=e.target.value;renderList()};$('#ord').onchange=e=>{S.ord=e.target.value;renderList()};
@@ -483,6 +492,7 @@ document.addEventListener('click',async e=>{
  if(a==='evmsg')return openEv(b.dataset.ev,b.dataset.id);
  if(a==='eventi')return eventiBox();
  if(a==='pastecli')return pasteBox();
+ if(a==='bio')return bioBox();
  if(a==='docopen')return docOpen(b.dataset.id);
  if(a==='docdel')return docDel(b.dataset.id);
  if(a==='docai')return docExtract(b.dataset.id);
@@ -510,11 +520,20 @@ function backupBox(){
  <p class="note">Il file di backup resta cifrato: per ripristinarlo serve la password con cui è stato creato.</p>
  <label class="fld chk" style="padding-top:8px"><input type="checkbox" id="bkf" checked>Includi i documenti allegati (file più grande)</label>
  <div class="row" style="margin:12px 0"><button class="btn pri" data-a="exp">Esporta backup</button><label class="btn" style="display:inline-block">Importa backup<input type="file" id="impf" accept=".json,application/json" style="display:none"></label></div>
+ <div class="lbl">Trasferisci con copia e incolla</div>
+ <p class="note">Per passare le schede tra la versione in Claude e l'app sul telefono: copia l'archivio da una parte e incollalo dall'altra (senza documenti allegati).</p>
+ <div class="row" style="margin:8px 0"><button class="btn" id="cpbk">Copia archivio come testo</button></div>
+ <textarea id="pbk" placeholder="…oppure incolla qui il testo dell'archivio copiato" style="min-height:70px;font-size:13px"></textarea>
+ <div class="row" style="margin-top:6px"><button class="btn sm" id="pbkgo">Leggi testo incollato</button></div>
  <div id="impbox"></div><div class="err" id="err"></div>
  <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-a="modalclose">Chiudi</button></div></div></div>`;
+ const askPw=data=>{$('#impbox').innerHTML=`<p class="note" style="margin-top:10px">${Object.keys(data.items||{}).length} schede trovate. Password dell'archivio di provenienza:</p><input type="password" id="ipw"><button class="btn pri sm" id="ibtn" style="margin-top:8px">Importa</button>`;$('#ibtn').onclick=()=>importa(data,$('#ipw').value);$('#impbox').scrollIntoView({behavior:'smooth',block:'nearest'})};
+ $('#cpbk').onclick=async()=>{await flush();const items={};for(const[k,v]of Object.entries(S.raw))if(k.startsWith('c_'))items[k]={iv:v.iv,ct:v.ct};
+  const txt=JSON.stringify({app:'archivio-clienti',v:2,creato:new Date().toISOString(),meta:{v:1,salt:S.meta.salt,iv:S.meta.iv,ct:S.meta.ct},items,eventi:S.raw.eventi?{iv:S.raw.eventi.iv,ct:S.raw.eventi.ct}:null,files:{}});
+  try{await navigator.clipboard.writeText(txt);toast('Archivio copiato: incollalo nell\'altra app')}catch(e){$('#pbk').value=txt;$('#pbk').select();toast('Selezionato: copialo dal menu Copia')}};
+ $('#pbkgo').onclick=()=>{const raw=$('#pbk').value.trim();let data;try{data=JSON.parse(raw.slice(raw.indexOf('{'),raw.lastIndexOf('}')+1));if(data.app!=='archivio-clienti')throw 0}catch(e){$('#err').textContent='Testo non valido: incollalo per intero.';return}askPw(data)};
  $('#impf').onchange=async ev=>{const f=ev.target.files[0];if(!f)return;let data;try{data=JSON.parse(await f.text());if(data.app!=='archivio-clienti')throw 0}catch(err){$('#err').textContent='File non valido.';return}
-  $('#impbox').innerHTML=`<p class="note">${Object.keys(data.items||{}).length} schede nel file. Password del backup:</p><input type="password" id="ipw"><button class="btn pri sm" id="ibtn" style="margin-top:8px">Importa</button>`;
-  $('#ibtn').onclick=()=>importa(data,$('#ipw').value)};
+  askPw(data)};
 }
 async function esportaBackup(){
  await flush();
@@ -752,6 +771,56 @@ function eventiBox(){
   await saveEventi();toast(n+' eventi importati');eventiBox();if(S.view==='list')renderList()};
  document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=async()=>{S.eventi=S.eventi.filter(e=>e.id!==b.dataset.ev);await saveEventi();eventiBox();if(S.view==='list')renderList()});
  if($('#epast'))$('#epast').onclick=async()=>{S.eventi=S.eventi.filter(e=>daysTo(e.data)>=0);await saveEventi();eventiBox();if(S.view==='list')renderList()};
+}
+
+/* ================== Sblocco biometrico (Face ID / impronta) ================== */
+const FACE=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 16c1.5 1 3.5 1 5 0"/></svg>`;
+const BIO_NAME=/iPhone|iPad|Mac/i.test(navigator.userAgent)?'Face ID / Touch ID':'impronta o volto';
+const BIO_LS='archivio_bio_v1';
+function bioAvail(){return !window.claude&&!!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext)}
+function bioCfg(){try{return JSON.parse(localStorage.getItem(BIO_LS)||'null')}catch(e){return null}}
+function bioOn(){return bioAvail()&&!!bioCfg()}
+function kdb(){return new Promise((res,rej)=>{const q=indexedDB.open('archivio_bio',1);q.onupgradeneeded=()=>q.result.createObjectStore('k');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function kput(v){const d=await kdb();return idbReq(d,'k','readwrite',st=>st.put(v,'dev'))}
+async function kget(){const d=await kdb();return idbReq(d,'k','readonly',st=>st.get('dev'))}
+async function kdel(){try{const d=await kdb();await idbReq(d,'k','readwrite',st=>st.delete('dev'))}catch(e){}}
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+async function bioAssert(cfg){
+ const opts={publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(cfg.id),transports:['internal']}],userVerification:'required',timeout:60000}};
+ if(cfg.mode==='prf')opts.publicKey.extensions={prf:{eval:{first:unb64(cfg.salt)}}};
+ const a=await navigator.credentials.get(opts);
+ if(cfg.mode==='prf'){const out=a.getClientExtensionResults().prf?.results?.first;if(!out)throw new Error('prf');return crypto.subtle.importKey('raw',out,'AES-GCM',false,['encrypt','decrypt'])}
+ const k=await kget();if(!k)throw new Error('key');return k;
+}
+function bioBox(){
+ const on=bioOn();
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold"><h2>${FACE} Sblocco <em>biometrico</em></h2>
+ ${on?`<p class="note" style="margin:10px 0">Lo sblocco con ${BIO_NAME} è attivo su questo telefono. La password resta valida e serve se la biometria non funziona.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn ghost" data-a="modalclose">Chiudi</button><button class="btn del" id="biooff">Disattiva</button></div>`
+ :`<p class="note" style="margin:10px 0">Apri l'archivio con ${BIO_NAME} invece di digitare la password. Per attivarlo, conferma la password dell'archivio.</p>
+  <input type="password" id="biopw" autocomplete="current-password" placeholder="Password dell'archivio"><div class="err" id="err"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn ghost" data-a="modalclose">Annulla</button><button class="btn pri" id="bioon">Attiva</button></div>`}</div></div>`;
+ if($('#biooff'))$('#biooff').onclick=async()=>{localStorage.removeItem(BIO_LS);await kdel();closeModal();renderList();toast('Sblocco biometrico disattivato')};
+ if($('#bioon'))$('#bioon').onclick=bioEnable;
+}
+async function bioEnable(){
+ const pw=$('#biopw').value,er=$('#err');er.textContent='';
+ try{const k=await deriveKey(pw,unb64(S.meta.salt));await decJSON(k,S.meta)}catch(e){er.textContent='Password errata.';return}
+ try{
+  const cred=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:'Archivio Clienti'},user:{id:rnd(16),name:'archivio-clienti',displayName:'Archivio Clienti'},
+   pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},timeout:60000,attestation:'none',extensions:{prf:{}}}});
+  const cfg={id:b64(cred.rawId),mode:'dev',salt:b64(rnd(32))};
+  let key=null;
+  if(cred.getClientExtensionResults().prf?.enabled){cfg.mode='prf';try{key=await bioAssert(cfg)}catch(e){cfg.mode='dev';key=null}}
+  if(!key){key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);await kput(key);cfg.mode='dev'}
+  const e=await encJSON(key,{pw});cfg.iv=e.iv;cfg.ct=e.ct;
+  localStorage.setItem(BIO_LS,JSON.stringify(cfg));closeModal();renderList();toast('Sblocco con '+BIO_NAME+' attivato');
+ }catch(e){er.textContent=e&&e.name==='NotAllowedError'?'Operazione annullata o non consentita.':e&&e.name==='NotSupportedError'?'Questo telefono o browser non supporta lo sblocco biometrico per le app web.':'Attivazione non riuscita: riprova.'}
+}
+async function bioUnlock(){
+ const cfg=bioCfg(),er=$('#err');if(!cfg)return;er.textContent='';
+ try{const key=await bioAssert(cfg);const{pw}=await decJSON(key,{iv:cfg.iv,ct:cfg.ct});await doUnlock(pw)}
+ catch(e){er.textContent=e&&e.name==='NotAllowedError'?'Riconoscimento annullato: riprova o usa la password.':'Sblocco biometrico non riuscito: usa la password. Se hai cambiato impostazioni del telefono, riattivalo dopo l\'accesso.';setTimeout(()=>$('#pw')&&$('#pw').focus(),50)}
 }
 
 /* ================== Gestione schede ================== */
