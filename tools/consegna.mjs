@@ -27,7 +27,7 @@ const files = docs.map(p => {
   return { nome: scheda.nomiFile?.[basename(p)] || basename(p), tipo, size: buf.length, data: buf.toString('base64') };
 });
 const payload = scheda.tipo === 'cf'
-  ? { tipo: 'cf', consulenti: scheda.consulenti || [] }
+  ? { tipo: 'cf', consulenti: scheda.consulenti || [], ...(scheda.em ? { em: scheda.em } : {}) }
   : { provenienza: scheda.provenienza || '', extra: scheda.extra || '', cliente: scheda.cliente || {}, files };
 const aes = await subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
 const iv = getRandomValues(new Uint8Array(12));
