@@ -506,6 +506,8 @@ document.addEventListener('click',async e=>{
  if(a==='cfparams')return cfParams();
  if(a==='cfpaste')return cfPaste();
  if(a==='cfteam')return cfTeam();
+ if(a==='emrep')return emReady()?emReport():emEdit();
+ if(a==='emedit')return emEdit();
  if(a==='docopen')return docOpen(b.dataset.id);
  if(a==='docshare')return docShare(b.dataset.id);
  if(a==='docdel')return docDel(b.dataset.id);
@@ -1009,6 +1011,7 @@ function renderCF(){
  const L=[...CF.consulenti].map(c=>({c,R:calcCF(c)})).sort((a,b)=>b.R.bonus-a.R.bonus);const tot=L.reduce((s,x)=>s+x.R.bonus,0);
  $('#app').innerHTML=topbar('Incentivazione <em>CF 2026</em>',`<button class="btn ico" data-a="cfback" title="Indietro" aria-label="Indietro">←</button>`,`<span class="status ${S.statusCls}" id="st">${esc(S.status)}</span>`)+`<div class="wrap">
  <div class="kpis"><div class="card kpi"><div class="k">Consulenti</div><div class="v">${L.length}</div></div><div class="card kpi"><div class="k">Bonus maturando totale</div><div class="v">${eur(tot)}</div></div><div class="card kpi"><div class="k">Media per consulente</div><div class="v">${eur(L.length?tot/L.length:0)}</div></div><div class="card kpi"><div class="k">Con maggiorazioni</div><div class="v">${L.filter(x=>x.R.pct>0).length}</div></div></div>
+ <button class="card gold" data-a="emrep" style="display:flex;width:100%;align-items:center;gap:12px;margin-top:12px;text-align:left;color:var(--text);cursor:pointer"><span class="grow"><span style="font-size:11px;letter-spacing:.18em;color:var(--gold)">EXECUTIVE MANAGER</span><br><b style="font-family:'Playfair Display',serif;font-size:18px">Bonus <em style="color:var(--gold)">EM 2026</em></b><br><span class="sub">${emReady()?'Bonus maturando '+eur(calcEM().totale):'Inserisci gli obiettivi della Scheda MBO'}</span></span><span style="color:var(--gold);font-size:22px">›</span></button>
  <div class="row" style="margin-top:14px"><button class="btn pri grow" data-a="cfedit">+ Consulente</button><button class="btn grow" data-a="cfpaste">Incolla da Excel</button></div>
  <div class="row" style="margin-top:8px"><button class="btn sm" data-a="cfteam">Report di squadra</button><button class="btn sm" data-a="cfparams">Parametri di calcolo</button></div>
  <div class="lbl">Consulenti finanziari</div>
@@ -1132,9 +1135,97 @@ function cfTeam(){
  <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div><button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
  repBox('Riepilogo di <em>squadra</em>',html,'Incentivazione_2026_squadra_'+today()+'.html');
 }
+/* ---------- Executive Manager: Piano di incentivazione 2026 (rete PW) ---------- */
+const EM_TAB=[[60,10000,10000],[85,17500,17500],[100,21000,24000],[120,23000,27000],[140,25000,35000],[160,27000,43000]];
+function emData(){CF.em=CF.em||{nome:'Massimiliano Di Luccio',data:today(),obt:{},act:{},auto:true,recl:[]};return CF.em}
+function emReady(){const e=CF&&CF.em;return !!(e&&num(e.obt.rn)>0&&num(e.obt.evo)>0)}
+function teamAgg(){const P=CF.params;let rn=0,evo=0,ass=0,aRN=0,aEVO=0;const n=CF.consulenti.length;
+ for(const c of CF.consulenti){const R=calcCF(c);rn+=R.rn;evo+=R.revo;ass+=R.ass;const s0=R.P.fasce[0].da;if(R.rn>=s0)aRN++;if(R.revo>=s0)aEVO++}
+ return{rn,evo,ass,n,aRN,aEVO}}
+function emVal(e,T,k){const v=e.act[k];if(v!==undefined&&v!=='')return num(v);return({rn:T.rn,rnSE:T.rn,evo:T.evo,evoSE:T.evo,ass:T.ass,nCF:T.n,aRN:T.aRN,aEVO:T.aEVO})[k]}
+const emTier=(p,i)=>{let b=0;for(const t of EM_TAB)if(p>=t[0])b=t[i];return b};
+const emSE=p=>p==null?1:p>=70?1:p>=50?.75:p>=0?.65:.55;
+const emAtt=p=>p>=80?1:p>=65?.75:p>=50?.5:0;
+function calcEM(){
+ const e=emData(),T=teamAgg(),o=e.obt;const g=k=>emVal(e,T,k);
+ const pc=(a,b)=>num(b)>0?a/num(b)*100:null;
+ const A={rn:g('rn'),rnSE:g('rnSE'),evo:g('evo'),evoSE:g('evoSE'),ass:g('ass'),nCF:g('nCF'),aRN:g('aRN'),aEVO:g('aEVO')};
+ const pRN=pc(A.rn,o.rn),pEVO=pc(A.evo,o.evo),pRNse=pc(A.rnSE,o.rnSE),pEVOse=pc(A.evoSE,o.evoSE);
+ const assF=A.ass<0?0.8:(num(o.ass)>0&&A.ass>=num(o.ass)?1.1:1);
+ const attRN=A.nCF?A.aRN/A.nCF*100:0,attEVO=A.nCF?A.aEVO/A.nCF*100:0;
+ const t1=emTier(pRN||0,1),t2=emTier(pEVO||0,2);
+ const fRN={ass:assF,se:emSE(pRNse),att:emAtt(attRN)},fEVO={ass:assF,se:emSE(pEVOse),att:emAtt(attEVO)};
+ const bRN=t1*fRN.ass*fRN.se*fRN.att,bEVO=t2*fEVO.ass*fEVO.se*fEVO.att;
+ // reclutamento (Tabella B): RN per reclutato fino a 30 mln, aliquota per RN totale e n. reclutamenti validi, cap 40.000
+ const rec=(e.recl||[]).map(x=>({...x,rnC:Math.min(num(x.rn),30000)}));const val=rec.filter(x=>x.valido);
+ const rnRec=val.reduce((s,x)=>s+x.rnC,0);const nv=val.length;
+ const aliq=nv>=2?(rnRec>=20000?0.04:rnRec>=12500?0.03:0):nv===1?(rnRec>=20000?0.02:rnRec>=12500?0.01:0):0;
+ let bRec=0;const recDet=val.map(x=>{const quota=rnRec?x.rnC/rnRec:0;const base=rnRec*1000*aliq/100*quota;const adj=1+(num(x.bm)||0)/100+(x.u45?0.2:0);bRec+=base*adj;return{...x,base,adj,bon:base*adj}});
+ const bRecCap=Math.min(bRec,40000);
+ return{e,T,A,o,pRN,pEVO,pRNse,pEVOse,attRN,attEVO,t1,t2,fRN,fEVO,bRN,bEVO,assF,rnRec,nv,aliq,recDet,bRec,bRecCap,totale:bRN+bEVO+bRecCap};
+}
+function emEdit(){
+ const e=emData(),T=teamAgg();const k1=(id,lab,v,ph)=>`<label class="fld">${lab}<input id="${id}" inputmode="decimal" value="${esc(v??'')}" placeholder="${esc(ph??'')}"></label>`;
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>Executive Manager <em>2026</em></h2>
+ <p class="note" style="margin:6px 0">Importi in migliaia di euro. I consuntivi vuoti si calcolano dalla squadra (${T.n} CF in elenco).</p>
+ <div class="grid" style="margin-top:8px"><label class="fld">Executive Manager<input id="em_nome" value="${esc(e.nome)}"></label><label class="fld">Dati al<input id="em_data" type="date" value="${esc(e.data||today())}"></label></div>
+ <div class="lbl">Obiettivi della Scheda MBO</div>
+ <div class="grid">${k1('o_rn','Raccolta netta totale',e.obt.rn)}${k1('o_rnSE','RN struttura esistente',e.obt.rnSE)}${k1('o_evo','Raccolta evoluta totale',e.obt.evo)}${k1('o_evoSE','Evoluta struttura esistente',e.obt.evoSE)}${k1('o_ass','RN incentivata assicurativa',e.obt.ass)}</div>
+ <div class="lbl">Consuntivi (vuoto = dalla squadra)</div>
+ <div class="grid">${k1('a_rn','Raccolta netta totale',e.act.rn,fmtNum(T.rn))}${k1('a_rnSE','RN struttura esistente',e.act.rnSE,fmtNum(T.rn))}${k1('a_evo','Raccolta evoluta totale',e.act.evo,fmtNum(T.evo))}${k1('a_evoSE','Evoluta struttura esistente',e.act.evoSE,fmtNum(T.evo))}${k1('a_ass','RN assicurativa',e.act.ass,fmtNum(T.ass))}
+ ${k1('a_nCF','N. CF coordinati',e.act.nCF,T.n)}${k1('a_aRN','CF a target RN',e.act.aRN,T.aRN)}${k1('a_aEVO','CF a target evoluta',e.act.aEVO,T.aEVO)}</div>
+ <div class="lbl">Reclutamenti 2026</div><div id="em_rec"></div><button class="btn sm" id="em_radd">+ Reclutato</button>
+ <div class="err" id="err"></div>
+ <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn ghost" data-a="modalclose">Annulla</button><button class="btn pri" id="em_ok">Salva e calcola</button></div></div></div>`;
+ let rec=JSON.parse(JSON.stringify(e.recl||[]));
+ const drawR=()=>{$('#em_rec').innerHTML=rec.length?rec.map((x,i)=>`<div class="card rowcard"><button class="btn ico ghost x" data-rdel="${i}" aria-label="Elimina">✕</button><div class="grid"><label class="fld">Nome<input data-r="${i}" data-k="nome" value="${esc(x.nome||'')}"></label><label class="fld">RN realizzata (migliaia €)<input data-r="${i}" data-k="rn" inputmode="decimal" value="${esc(x.rn||'')}"></label>
+  <label class="fld">Costo ex ante<select data-r="${i}" data-k="bm"><option value="0" ${!num(x.bm)?'selected':''}>Nella norma (0%)</option><option value="30" ${num(x.bm)===30?'selected':''}>Basso: +30%</option><option value="-30" ${num(x.bm)===-30?'selected':''}>Alto: -30%</option></select></label>
+  <label class="fld chk"><input type="checkbox" data-r="${i}" data-k="valido" ${x.valido?'checked':''}>Reclutamento valido</label><label class="fld chk"><input type="checkbox" data-r="${i}" data-k="u45" ${x.u45?'checked':''}>Under 45 con obiettivi raggiunti (+20%)</label></div></div>`).join(''):'<div class="empty">Nessun reclutamento.</div>';
+  document.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=()=>{readR();rec.splice(+b.dataset.rdel,1);drawR()})};
+ const readR=()=>document.querySelectorAll('[data-r]').forEach(el=>{const x=rec[+el.dataset.r];x[el.dataset.k]=el.type==='checkbox'?el.checked:el.value});
+ drawR();$('#em_radd').onclick=()=>{readR();rec.push({nome:'',rn:'',bm:0,valido:true,u45:false});drawR()};
+ $('#em_ok').onclick=async()=>{readR();const v=id=>$('#'+id).value.trim();
+  e.nome=v('em_nome')||'Executive Manager';e.data=v('em_data')||today();
+  e.obt={rn:v('o_rn'),rnSE:v('o_rnSE'),evo:v('o_evo'),evoSE:v('o_evoSE'),ass:v('o_ass')};
+  e.act={rn:v('a_rn'),rnSE:v('a_rnSE'),evo:v('a_evo'),evoSE:v('a_evoSE'),ass:v('a_ass'),nCF:v('a_nCF'),aRN:v('a_aRN'),aEVO:v('a_aEVO')};
+  e.recl=rec.map(x=>({...x,bm:num(x.bm)}));
+  if(!(num(e.obt.rn)>0&&num(e.obt.evo)>0)){$('#err').textContent='Servono almeno gli obiettivi di raccolta netta totale ed evoluta totale.';return}
+  await cfSave();closeModal();renderCF();emReport()};
+}
+const fmtNum=v=>(Math.round(v*1000)/1000).toLocaleString('it-IT');
+const pcs=p=>p==null?'n.d.':(Math.round(p*10)/10).toLocaleString('it-IT')+'%';
+function emReportHTML(){
+ const X=calcEM(),o=X.o,A=X.A;
+ const nextT=p=>EM_TAB.find(t=>t[0]>(p||0));
+ const H=[];for(const[k,lab,p,i]of [['rn','Raccolta netta totale',X.pRN,1],['evo','Raccolta evoluta totale',X.pEVO,2]]){const n=nextT(p);if(n&&num(o[k])>0){const gap=num(o[k])*n[0]/100-A[k];const f=i===1?X.fRN:X.fEVO;H.push(`${lab}: mancano ${fmtK(gap)} per arrivare al ${n[0]}% dell'obiettivo (bonus della pista ${eur(emTier(p||0,i)*f.ass*f.se*f.att)} → ${eur(n[i]*f.ass*f.se*f.att)})`)}}
+ if(X.attRN<80){const need=Math.ceil(.8*A.nCF)-A.aRN;H.push(`CF attivi sulla netta: ${A.aRN} su ${A.nCF} (${pcs(X.attRN)}); con ${need} CF in più a target la pista netta passa al 100%`)}
+ if(X.attEVO<80){const need=Math.ceil(.8*A.nCF)-A.aEVO;H.push(`CF attivi sull'evoluta: ${A.aEVO} su ${A.nCF}; con ${need} CF in più a target la pista evoluta passa al 100%`)}
+ if(X.assF===1&&num(o.ass)>0&&A.ass>=0)H.push(`RN assicurativa: mancano ${fmtK(num(o.ass)-A.ass)} per l'obiettivo (+10% su netta ed evoluta)`);
+ const row=(lab,ob,ac,p)=>`<tr><td>${lab}</td><td class="n">${num(ob)>0?fmtK(num(ob)):'–'}</td><td class="n">${fmtK(ac)}</td><td class="n">${pcs(p)}</td></tr>`;
+ const fx=f=>`${f.ass===1?'':(f.ass>1?'+10% assicurativa':'-20% assicurativa negativa')}`;
+ return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione EM 2026 – ${esc(X.e.nome)}</title><style>${REP_CSS}</style></head><body>
+ <div class="band"><div class="k">PIANO DI INCENTIVAZIONE 2026 · EXECUTIVE MANAGER</div><h1>${esc(X.e.nome)}</h1><div>Rete Private &amp; Wealth · ${A.nCF} CF coordinati · dati al ${fmtD(X.e.data)}</div></div><div class="in">
+ <div class="big"><div><b>${eur(X.totale)}</b>Bonus maturando totale</div><div><b>${eur(X.bRN)}</b>Pista raccolta netta</div><div><b>${eur(X.bEVO)}</b>Pista raccolta evoluta</div>${X.bRecCap?`<div><b>${eur(X.bRecCap)}</b>Reclutamento</div>`:''}</div>
+ <h2>Obiettivi e raggiungimento</h2><table><tr><th>Obiettivo</th><th>Scheda MBO</th><th>Realizzato</th><th>% raggiungimento</th></tr>
+ ${row('Raccolta netta totale',o.rn,A.rn,X.pRN)}${row('RN struttura esistente',o.rnSE,A.rnSE,X.pRNse)}${row('Raccolta evoluta totale',o.evo,A.evo,X.pEVO)}${row('Evoluta struttura esistente',o.evoSE,A.evoSE,X.pEVOse)}${row('RN incentivata assicurativa',o.ass,A.ass,num(o.ass)>0?A.ass/num(o.ass)*100:null)}</table>
+ <h2>Calcolo del bonus</h2><table><tr><th>Passaggio</th><th>Raccolta netta</th><th>Raccolta evoluta</th></tr>
+ <tr><td>Bonus da tabella (fascia di raggiungimento)</td><td class="n">${eur(X.t1)}</td><td class="n">${eur(X.t2)}</td></tr>
+ <tr><td>Obiettivo assicurativo (+10% se raggiunto, -20% se RN assicurativa negativa)</td><td class="n">×${String(X.fRN.ass).replace('.',',')}</td><td class="n">×${String(X.fEVO.ass).replace('.',',')}</td></tr>
+ <tr><td>Struttura esistente (100% da 70% dell'obiettivo)</td><td class="n">×${Math.round(X.fRN.se*100)}%${num(o.rnSE)>0?'':' (obt n.d.)'}</td><td class="n">×${Math.round(X.fEVO.se*100)}%${num(o.evoSE)>0?'':' (obt n.d.)'}</td></tr>
+ <tr><td>CF attivi (Tabella A: 100% da 80%)</td><td class="n">${A.aRN}/${A.nCF} = ${pcs(X.attRN)} → ×${Math.round(X.fRN.att*100)}%</td><td class="n">${A.aEVO}/${A.nCF} = ${pcs(X.attEVO)} → ×${Math.round(X.fEVO.att*100)}%</td></tr>
+ <tr><th>Bonus maturando per pista</th><th class="n">${eur(X.bRN)}</th><th class="n">${eur(X.bEVO)}</th></tr></table>
+ <h2>Reclutamento 2026</h2>${X.recDet.length?`<table><tr><th>Reclutato</th><th>RN considerata</th><th>Base</th><th>Variazioni</th><th>Bonus</th></tr>${X.recDet.map(x=>`<tr><td>${esc(x.nome||'Reclutato')}</td><td class="n">${fmtK(x.rnC)}</td><td class="n">${eur(x.base)}</td><td>${[num(x.bm)?((num(x.bm)>0?'+':'')+num(x.bm)+'% costo ex ante'):'',x.u45?'+20% under 45':''].filter(Boolean).join(', ')||'–'}</td><td class="n">${eur(x.bon)}</td></tr>`).join('')}<tr><th colspan="4">RN da reclutamenti validi ${fmtK(X.rnRec)} · ${X.nv} validi · aliquota ${String(X.aliq).replace('.',',')}%${X.bRec>40000?' · tetto 40.000 €':''}</th><th class="n">${eur(X.bRecCap)}</th></tr></table>`:'<p>Nessun reclutamento valido inserito: obiettivo 20 mln con 2 reclutamenti validi, bonus massimo 40.000 €.</p>'}
+ ${H.length?`<h2>Prossimi traguardi</h2><ul>${H.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}
+ <p style="font-size:11.5px;color:#555;margin-top:18px">Tabella bonus 2026: 60-85% 10.000+10.000; 85-100% 17.500+17.500; 100-120% 21.000+24.000; 120-140% 23.000+27.000; 140-160% 25.000+35.000; oltre 160% 27.000+43.000 (netta+evoluta). Struttura esistente: ≥70% 100%, 50-70% 75%, 0-50% 65%, negativa 55%. Tabella A CF attivi: ≥80% 100%, 65-80% 75%, 50-65% 50%, sotto 50% 0%. La raccolta personale dell'EM non concorre. Bonus soggetto a gate d'accesso, regole di correttezza e consolidamento a maggio 2027.</p>
+ <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div>
+ <button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
+}
+function emReport(){const e=emData();repBox(`Bonus <em>EM 2026</em>`,emReportHTML(),'Incentivazione_EM_2026_'+e.nome.replace(/[^\wÀ-ÿ]+/g,'_')+'_'+today()+'.html');
+ setTimeout(()=>{const r=document.querySelector('#modal .row');if(r&&!$('#emedit2')){const b=document.createElement('button');b.className='btn';b.id='emedit2';b.textContent='Modifica dati';b.dataset.a='emedit';r.insertBefore(b,r.firstChild.nextSibling)}},0)}
 async function mergeCF(pay){
  let n=0,u=0;for(const x of (pay.consulenti||[])){if(!x||!x.nome)continue;const vals={cod:String(x.cod??''),cluster:CLUSTERS.includes(x.cluster)?x.cluster:'PTF 20-50 mln',rn:String(x.rn??''),revo:String(x.revo??''),ass:String(x.ass??''),data:x.data||today(),opPart:!!x.opPart};
   const lc=v=>String(v||'').toLowerCase().trim();const ex=CF.consulenti.find(c=>x.cod&&c.cod&&String(c.cod)===String(x.cod))||CF.consulenti.find(c=>lc(c.nome)===lc(x.nome))||CF.consulenti.find(c=>x.alias&&lc(c.nome)===lc(x.alias));if(ex){Object.assign(ex,vals);ex.nome=String(x.nome);if(x.note)ex.note=x.note;u++}else{CF.consulenti.push({id:'cf'+uid(),nome:String(x.nome),note:x.note||'',...vals});n++}}
+ if(pay.em){const e=emData();if(pay.em.nome)e.nome=pay.em.nome;if(pay.em.data)e.data=pay.em.data;Object.assign(e.obt,pay.em.obt||{});Object.assign(e.act,pay.em.act||{});if(Array.isArray(pay.em.recl))e.recl=pay.em.recl}
  await cfSave();if(S.view==='cf')renderCF();
  return `Incentivazione CF 2026: ${n} consulenti aggiunti${u?', '+u+' aggiornati':''}`;
 }

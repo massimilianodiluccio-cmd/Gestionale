@@ -39,3 +39,7 @@ Dati dei consulenti della rete (raccolta in migliaia di euro) e report individua
 Per consegnare dati all'app: JSON `{"tipo":"cf","consulenti":[{"cod","nome","alias (nome precedente, facoltativo)","cluster":"PTF 20-50 mln","rn","revo","ass","data":"AAAA-MM-GG","opPart":false,"note"}]}`
 con `node tools/consegna.mjs`; i consulenti con lo stesso nome vengono aggiornati. Cluster ammessi: PTF sotto 20 mln,
 PTF 20-50 mln, PTF 50-150 mln, PTF oltre 150 mln. Parametri dal Regolamento BG Premium 2026 (par. G, H, J): fasce e aliquote per cluster (sotto 20 mln aliquote diverse per netta ed evoluta), +20% solo dai 20 mln con netta minima = prima soglia del cluster, +10% con RN assicurativa da 500k, maggiorazioni sommate, aliquota della fascia raggiunta su tutta la raccolta, evoluta -50% se RN negativa, tetti 250/300/350/420k (+200k, +230k oltre 150 mln). Verificato con i 4 esempi del regolamento. Modificabili nell'app.
+Executive Manager (Piano EM 2026): pulsante "Bonus EM 2026" nella sezione. Obiettivi della Scheda MBO (k€: rn, rnSE, evo, evoSE, ass),
+consuntivi dalla somma della squadra se vuoti, CF attivi = CF sopra la prima soglia del proprio cluster per pista, reclutamenti.
+Consegna: nel JSON tipo "cf" aggiungi `"em":{"nome","data","obt":{...},"act":{...},"recl":[{"nome","rn","valido","bm":30|0|-30,"u45"}]}`.
+Verificato con gli esempi di reclutamento del piano (1.250 / 6.000 / 12.000 €).
