@@ -1,0 +1,28 @@
+# Archivio Clienti – note per Claude
+
+App web statica (index.html unico) pubblicata su Vercel dal branch `main`: ogni push va online in ~1 minuto.
+Utente: Massimiliano Di Luccio, consulente finanziario. Interfaccia e messaggi in italiano.
+
+## Dati
+- I dati dei clienti NON stanno nel repository: sono cifrati (AES-GCM, chiave da password PBKDF2) nell'IndexedDB del telefono.
+- Non inserire mai dati di clienti in chiaro nel repository, nei commit o nei messaggi di commit.
+
+## Consegna di schede all'app (cartella inbox/)
+Quando l'utente manda in chat documenti o informazioni su un cliente e chiede di inserirli nell'app:
+1. Prepara un JSON scheda fuori dal repository (es. /tmp/scheda.json):
+   `{"provenienza":"da quale documento/colloquio","extra":"note libere","cliente":{...}}`
+   Chiavi di `cliente`: quelle dei campi in `F` di index.html (anag, lav) e le liste fam, int, ric, az, att, pas, ban, cop
+   (array di oggetti con le chiavi di F[lista]); date AAAA-MM-GG, importi numerici, opzioni esattamente come in F.
+2. `node tools/consegna.mjs /tmp/scheda.json [documenti originali...]` → crea `inbox/<id>.json` cifrato con
+   `inbox/chiave-pubblica.json` e aggiorna `inbox/index.json`.
+3. Commit e push su main. All'apertura l'app importa: crea la scheda (match per codice fiscale o nome+cognome)
+   oppure aggiunge i dati a quella esistente senza sovrascrivere campi già compilati; allega i documenti.
+Se manca `inbox/chiave-pubblica.json`, chiedi all'utente: app → "Ricevi schede da Claude" → Attiva → Copia chiave.
+La chiave incollata ha forma `CHIAVE-ARCHIVIO-CLIENTI:<base64 di JSON {kty,n,e,alg}>`: decodificala e salvala come JSON.
+
+## Versione in Claude
+Esiste anche un artifact claude.ai (slug 573b46c4-7d23-4cb7-820f-85851b018ffb) con lo stesso index.html:
+quando modifichi l'app, ripubblica lì lo stesso file.
+
+## Ogni elaborato per i clienti
+Disclaimer obbligatorio con la data del giorno; firma "Massimiliano Di Luccio".

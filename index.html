@@ -277,12 +277,13 @@ async function doUnlock(pwIn){
  if(bad)toast(bad+' schede non leggibili');
  S.eventi=[];if(S.raw.eventi){try{S.eventi=(await decJSON(S.key,S.raw.eventi)).list||[]}catch(e){}}
  lastAct=Date.now();S.view='list';render();
+ setTimeout(()=>inboxCheck(false),400);
 }
 async function lock(){
  await flush();
  // ricarica i dati cifrati aggiornati, poi cancella la memoria in chiaro
  try{S.raw=await store.loadAll()}catch(e){}
- if(COLL)await collClose();closeVoice();S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
+ if(COLL)await collClose();closeVoice();INBOX=null;S.key=null;S.clients={};S.eventi=[];S.cur=null;S.view='lock';closeModal();render();
 }
 setInterval(()=>{if(S.key&&!COLL&&Date.now()-lastAct>LOCK_MIN*60000)lock()},20000);
 ['pointerdown','keydown','scroll'].forEach(ev=>addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
@@ -394,7 +395,7 @@ function renderList(){
   <button class="btn" data-a="newvoice" title="Nuovo cliente da dettatura">${MIC} Detta</button></div>
  <div class="row" style="margin-bottom:10px"><button class="btn pri grow" data-a="new" data-stato="Cliente">+ Nuovo cliente</button><button class="btn pri grow" data-a="new" data-stato="Prospect">+ Nuovo prospect</button></div>
  <div class="card list" style="padding:0">${rows.length?rows.map(c=>{const A=an[c.id];return`<div class="it" data-a="open" data-id="${c.id}"><div class="av">${esc(initials(c))}</div><div class="grow"><div class="nm">${esc(fullName(c))}</div><div class="sub">${[A.eta!==null?A.eta+' anni':'',c.professione||c.lavoro&&c.lavoro!=='—'&&c.lavoro||'',(c.az||[])[0]?.ragione||''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div></div><div style="text-align:right"><div class="nm" style="color:var(--gold2)">${eur(A.netto)}</div><div class="row" style="justify-content:flex-end;gap:4px;margin-top:2px"><span class="badge ${c.stato==='Cliente'?'g':''}">${esc(c.stato||'Prospect')}</span>${A.O.length?`<span class="badge r">${A.O.length} opp.</span>`:''}</div></div><button class="btn ico ghost" data-a="menu" data-id="${c.id}" title="Gestisci scheda" aria-label="Gestisci scheda di ${esc(fullName(c))}" style="margin-right:-8px;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div>`}).join(''):`<div class="empty" style="padding:18px">${cl.length?'Nessun risultato.':'Nessuna scheda in archivio. Tocca “+ Nuovo cliente” o “+ Nuovo prospect” per iniziare.'}</div>`}</div>
- <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button>${bioAvail()?`<button class="btn sm" data-a="bio">${FACE} ${bioOn()?'Sblocco biometrico attivo':'Attiva '+BIO_NAME}</button>`:''}</div>
+ <div class="row" style="margin-top:10px"><button class="btn sm" data-a="pastecli">Importa scheda da Claude</button>${inboxAvail()?`<button class="btn sm" data-a="inbox">${INBOX_ICO} ${S.raw.inbox?'Ricezione da Claude attiva':'Ricevi schede da Claude'}</button>`:''}${bioAvail()?`<button class="btn sm" data-a="bio">${FACE} ${bioOn()?'Sblocco biometrico attivo':'Attiva '+BIO_NAME}</button>`:''}</div>
  <p class="disc">Archivio cifrato con la tua password. Si blocca da solo dopo ${LOCK_MIN} minuti di inattività.</p></div>`;
  const qi=$('#q');qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;renderList();const n=$('#q');n.focus();n.setSelectionRange(p,p)};
  $('#filtro').onchange=e=>{S.filtro=e.target.value;renderList()};$('#ord').onchange=e=>{S.ord=e.target.value;renderList()};
@@ -493,6 +494,7 @@ document.addEventListener('click',async e=>{
  if(a==='eventi')return eventiBox();
  if(a==='pastecli')return pasteBox();
  if(a==='bio')return bioBox();
+ if(a==='inbox')return inboxBox();
  if(a==='docopen')return docOpen(b.dataset.id);
  if(a==='docdel')return docDel(b.dataset.id);
  if(a==='docai')return docExtract(b.dataset.id);
@@ -821,6 +823,84 @@ async function bioUnlock(){
  const cfg=bioCfg(),er=$('#err');if(!cfg)return;er.textContent='';
  try{const key=await bioAssert(cfg);const{pw}=await decJSON(key,{iv:cfg.iv,ct:cfg.ct});await doUnlock(pw)}
  catch(e){er.textContent=e&&e.name==='NotAllowedError'?'Riconoscimento annullato: riprova o usa la password.':'Sblocco biometrico non riuscito: usa la password. Se hai cambiato impostazioni del telefono, riattivalo dopo l\'accesso.';setTimeout(()=>$('#pw')&&$('#pw').focus(),50)}
+}
+
+/* ================== Ricezione schede da Claude (cassetta cifrata) ==================
+ Claude prepara le schede e le cifra con la chiave PUBBLICA di questa app (RSA-OAEP 3072 + AES-GCM),
+ poi le pubblica nella cartella inbox/ del sito. Solo questa app, con la chiave privata custodita
+ nell'archivio cifrato, può leggerle. Vedi CLAUDE.md nel repository. */
+const INBOX_ICO=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 13l2-8h12l2 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/></svg>`;
+let INBOX=null,inboxBusy=false;
+function inboxAvail(){return !window.claude&&location.protocol!=='file:'}
+async function inboxLoad(){if(INBOX||!S.raw.inbox)return INBOX;try{const d=await decJSON(S.key,S.raw.inbox);INBOX={pub:S.raw.inbox.pub,priv:await crypto.subtle.importKey('jwk',d.priv,{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']),privJwk:d.priv,done:d.done||[],log:d.log||[]}}catch(e){INBOX=null}return INBOX}
+async function inboxSave(){const e=await encJSON(S.key,{priv:INBOX.privJwk,done:INBOX.done.slice(-500),log:INBOX.log.slice(-50)});e.pub=INBOX.pub;await store.put('inbox',e);S.raw.inbox=e}
+function pubText(pub){return 'CHIAVE-ARCHIVIO-CLIENTI:'+btoa(JSON.stringify({kty:pub.kty,n:pub.n,e:pub.e,alg:'RSA-OAEP-256'}))}
+async function inboxEnable(){
+ const kp=await crypto.subtle.generateKey({name:'RSA-OAEP',modulusLength:3072,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['encrypt','decrypt']);
+ const pub=await crypto.subtle.exportKey('jwk',kp.publicKey),priv=await crypto.subtle.exportKey('jwk',kp.privateKey);
+ INBOX={pub:{kty:pub.kty,n:pub.n,e:pub.e},privJwk:priv,priv:kp.privateKey,done:[],log:[]};await inboxSave();
+}
+function inboxBox(){
+ const on=!!S.raw.inbox;
+ $('#modal').innerHTML=`<div class="modal"><div class="card gold vb"><h2>${INBOX_ICO} Ricezione <em>da Claude</em></h2>
+ ${on?`<p class="note" style="margin:10px 0">Attiva. Ogni volta che apri l'app (e ogni 5 minuti mentre è aperta) vengono importate le schede e i documenti che Claude ti ha preparato in chat.</p>
+  <div class="lbl">Chiave di consegna</div><p class="note">Se Claude te la chiede, copiala e incollala in chat. È pubblica: serve solo a cifrare le schede destinate a te.</p>
+  <textarea id="pubk" readonly style="min-height:70px;font-size:12px">${esc(pubText(S.raw.inbox.pub))}</textarea>
+  <div class="row" style="margin-top:6px"><button class="btn sm" id="cpk">Copia chiave</button><button class="btn sm" id="ichk">Controlla ora</button></div>
+  <div class="lbl">Ultime ricezioni</div><div id="ilog" class="card" style="padding:4px 12px"><div class="empty" style="padding:6px 0">Caricamento…</div></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn sm del" id="ioff">Disattiva</button><button class="btn ghost" data-a="modalclose">Chiudi</button></div>`
+ :`<p class="note" style="margin:10px 0">Quando mi mandi in chat documenti o informazioni su un cliente, preparo la scheda e la consegno direttamente qui, cifrata: la apre solo questa app.</p>
+  <ol class="note" style="padding-left:18px;margin:8px 0"><li>Tocca <b>Attiva</b>: l'app crea la sua chiave di consegna.</li><li>Copia la chiave e incollala in chat con Claude (basta una volta).</li><li>Da lì in poi le schede arrivano da sole quando apri l'app.</li></ol>
+  <div class="err" id="err"></div><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn ghost" data-a="modalclose">Annulla</button><button class="btn pri" id="ion">Attiva</button></div>`}</div></div>`;
+ if($('#ion'))$('#ion').onclick=async()=>{$('#ion').disabled=true;$('#err').textContent='Creazione della chiave…';try{await inboxEnable();inboxBox();renderList()}catch(e){$('#err').textContent='Creazione non riuscita: riprova.';$('#ion').disabled=false}};
+ if($('#cpk'))$('#cpk').onclick=async()=>{try{await navigator.clipboard.writeText($('#pubk').value);toast('Chiave copiata: incollala in chat')}catch(e){$('#pubk').select();toast('Selezionata: copiala dal menu')}};
+ if($('#ichk'))$('#ichk').onclick=()=>inboxCheck(true);
+ if($('#ioff'))$('#ioff').onclick=()=>confirmBox('Disattivare la ricezione? Le schede già importate restano; quelle non ancora ricevute non saranno più leggibili e la chiave andrà ricomunicata a Claude.',async()=>{await store.del('inbox');delete S.raw.inbox;INBOX=null;renderList();toast('Ricezione disattivata')});
+ if($('#ilog'))inboxLoad().then(I=>{const el=$('#ilog');if(!el)return;el.innerHTML=I&&I.log.length?I.log.slice().reverse().slice(0,10).map(l=>`<div class="chg"><span class="dt">${fmtD(l.data)}</span> ${esc(l.t)}</div>`).join(''):'<div class="empty" style="padding:6px 0">Ancora nessuna scheda ricevuta.</div>'});
+}
+async function inboxCheck(manual){
+ if(!inboxAvail()||!S.key||!S.raw.inbox||inboxBusy)return;inboxBusy=true;
+ try{
+  const I=await inboxLoad();if(!I)throw new Error('chiave');
+  const res=await fetch('inbox/index.json?t='+Date.now(),{cache:'no-store'});if(!res.ok){if(manual)toast('Nessuna scheda in arrivo');return}
+  const idx=await res.json();const nuovi=(idx.pacchetti||[]).filter(p=>p&&p.id&&!I.done.includes(p.id));
+  if(!nuovi.length){if(manual)toast('Nessuna nuova scheda');return}
+  const esiti=[];
+  for(const p of nuovi){
+   try{const r=await fetch('inbox/'+encodeURIComponent(p.file||p.id+'.json')+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;const pk=await r.json();
+    if(pk.fp&&pk.fp!==I.pub.n.slice(0,16)){I.done.push(p.id);continue}
+    const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},I.priv,unb64(pk.ek));const k=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+    const pay=JSON.parse(TD.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(pk.iv)},k,unb64(pk.ct))));
+    const t=await mergeScheda(pay);esiti.push(t);I.log.push({data:today(),t});I.done.push(p.id);await inboxSave()}
+   catch(e){/* pacchetto non destinato a questa chiave o non ancora pubblicato: si riprova più tardi */}
+  }
+  await flush();
+  if(esiti.length){if(S.view==='list')renderList();
+   $('#modal').innerHTML=`<div class="modal"><div class="card gold"><div class="lbl" style="margin-top:0">${INBOX_ICO} Ricevuto da Claude</div>${esiti.map(t=>`<div class="chg">${esc(t)}</div>`).join('')}<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn pri" data-a="modalclose">OK</button></div></div></div>`}
+  else if(manual)toast('Nessuna nuova scheda leggibile');
+ }catch(e){if(manual)toast('Controllo non riuscito: verifica la connessione')}
+ finally{inboxBusy=false}
+}
+setInterval(()=>{if(!document.hidden)inboxCheck(false)},300000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(()=>inboxCheck(false),800)});
+async function mergeScheda(pay){
+ const cli=pay.cliente||{};const P=parseExtract({campi:cli,aggiungi:cli,extra:pay.extra||''},'','');
+ const key=x=>(x||'').toLowerCase().trim();
+ let c=Object.values(S.clients).find(x=>P.campi.cf&&key(x.cf)===key(P.campi.cf))||Object.values(S.clients).find(x=>P.campi.cognome&&key(x.nome)===key(P.campi.nome)&&key(x.cognome)===key(P.campi.cognome));
+ const isNew=!c;
+ if(isNew){c={id:uid(),stato:['Cliente','Prospect','Ex cliente'].includes(cli.stato)?cli.stato:'Prospect',created:Date.now(),updated:Date.now(),fam:[],int:[],ric:[],az:[],att:[],pas:[],ban:[],cop:[],note:[],docs:[]};S.clients[c.id]=c}
+ let nCampi=0,nRighe=0;
+ for(const[k,v]of Object.entries(P.campi)){if(isNew||c[k]==null||c[k]===''||c[k]==='—'){c[k]=v;nCampi++}}
+ V_ARR.forEach(k=>{c[k]=c[k]||[];for(const row of P.rows[k]){const sig=JSON.stringify(row);const dup=c[k].some(x=>JSON.stringify(x)===sig||(k==='cop'&&row.num&&x.num===row.num));if(!dup){c[k].push(row);nRighe++}}});
+ const nota=[pay.provenienza,P.extra].filter(Boolean).join('\n\n');
+ if(nota){(c.note=c.note||[]).push({data:today(),testo:'Da Claude: '+nota})}
+ let nDoc=0;
+ for(const f of (pay.files||[])){try{c.docs=c.docs||[];if(c.docs.some(d=>d.nome===f.nome&&d.size===f.size))continue;
+  const tipo=DOC_EXT[f.tipo]?f.tipo:'application/pdf';const iv=rnd(12);const ct=b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},S.key,unb64(f.data)));
+  const id='d'+uid();const n=Math.ceil(ct.length/CHUNK);for(let i=0;i<n;i++)await store.putChunk(id+'_'+i,{d:ct.slice(i*CHUNK,(i+1)*CHUNK)});
+  c.docs.push({id,nome:f.nome,tipo,size:f.size,data:today(),n,iv:b64(iv)});nDoc++}catch(e){}}
+ c.updated=Date.now();dirty.add(c.id);
+ return `${fullName(c)}: ${isNew?'nuova scheda':'scheda aggiornata'}${nDoc?`, ${nDoc} ${nDoc===1?'documento':'documenti'}`:''}${!isNew&&(nCampi||nRighe)?` (${nCampi+nRighe} dati aggiunti)`:''}`;
 }
 
 /* ================== Gestione schede ================== */
