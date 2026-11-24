@@ -1086,19 +1086,39 @@ function cfParams(){
   CLUSTERS.forEach(k=>{P.cap[k]=[num($(`[data-cap0="${k}"]`).value),num($(`[data-cap1="${k}"]`).value)]});await cfSave();closeModal();renderCF();toast('Parametri aggiornati')};
  $('#p_rst').onclick=()=>confirmBox('Ripristinare i parametri del regolamento?',async()=>{CF.params=cfDefaults();await cfSave();renderCF()});
 }
-const REP_CSS=`body{font:13px/1.5 Arial,Helvetica,sans-serif;color:#222;max-width:820px;margin:0 auto;padding:0 0 30px;background:#fff}
-.band{background:linear-gradient(115deg,#6E0A1A,#C8102E);color:#fff;padding:26px 30px 22px;border-bottom:3px solid #C9A26B}
-.band .k{font-size:11px;letter-spacing:.22em;color:#f1d9b0}.band h1{font:600 30px Georgia,serif;margin:6px 0 4px}.band h1 em{color:#f1d9b0}
-.in{padding:0 30px}h2{font:600 17px Georgia,serif;color:#7d0c1e;border-bottom:1px solid #C9A26B;padding-bottom:4px;margin:24px 0 10px}
-table{border-collapse:collapse;width:100%}th,td{border:1px solid #e2d6c3;padding:7px 9px;text-align:left}th{background:#f7f1e7;font-weight:600}td.n{text-align:right;white-space:nowrap}
-.big{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.big div{flex:1;min-width:170px;border:1px solid #C9A26B;border-radius:10px;padding:12px 14px}.big b{display:block;font:600 24px Georgia,serif;color:#7d0c1e}
+/* Ogni report ha la sua palette: a/b fascia, acc testo chiaro sulla fascia, h titoli e numeri, line filetti, th intestazioni */
+const PALETTES=[
+ {a:'#0B2545',b:'#1F5F99',acc:'#BFD7F2',h:'#13406E',line:'#7FA7D4',th:'#EEF3FA'}, // blu notte
+ {a:'#0F3D2E',b:'#1E7A5A',acc:'#C4EBD8',h:'#16573F',line:'#7DBFA2',th:'#EDF7F2'}, // smeraldo
+ {a:'#3B1145',b:'#7B2E8E',acc:'#E6C9EF',h:'#5A1E6A',line:'#B68AC4',th:'#F6EEF8'}, // prugna
+ {a:'#5A2A06',b:'#B5560F',acc:'#F7D6B8',h:'#7E3A0A',line:'#E0A46E',th:'#FCF1E7'}, // ambra
+ {a:'#08363B',b:'#13808A',acc:'#BDEAEE',h:'#0D5960',line:'#75C1C8',th:'#EBF7F8'}, // petrolio
+ {a:'#2A2F36',b:'#566270',acc:'#D9DEE4',h:'#38414B',line:'#9AA5B1',th:'#F1F3F5'}, // grafite
+ {a:'#4A0E2B',b:'#A1205E',acc:'#F5C6DC',h:'#6E1640',line:'#D788AD',th:'#FBEEF4'}, // magenta scuro
+ {a:'#2E3B0B',b:'#617A16',acc:'#DDEBB7',h:'#43570F',line:'#A9C26A',th:'#F4F8E9'}, // oliva
+ {a:'#1B1F5E',b:'#3F48B8',acc:'#CDD1F7',h:'#283080',line:'#8F96DD',th:'#EFF0FB'}, // indaco
+ {a:'#5C1A12',b:'#B03A2A',acc:'#F4CBC4',h:'#7E261A',line:'#DC8E82',th:'#FBEEEC'}, // terracotta
+ {a:'#123B52',b:'#2D7FA8',acc:'#C3E2F2',h:'#1B5573',line:'#7FB8D6',th:'#EDF6FB'}, // azzurro profondo
+ {a:'#3D2B14',b:'#86622F',acc:'#EBDCC2',h:'#5A4020',line:'#C3A578',th:'#F8F2E8'}, // bronzo
+ {a:'#21403A',b:'#3F8072',acc:'#CFE8E2',h:'#2D5A51',line:'#8DBFB3',th:'#EFF7F5'}, // salvia
+ {a:'#46143A',b:'#8F2C6F',acc:'#EFC9E3',h:'#661F52',line:'#C98AB4',th:'#F9EEF5'}  // ciclamino
+];
+const PAL_EM={a:'#1C1C1E',b:'#4A4A4F',acc:'#E8D3A8',h:'#8A6A2E',line:'#C9A26B',th:'#F7F2E8'};   // antracite e oro
+const PAL_TEAM={a:'#6E0A1A',b:'#C8102E',acc:'#F1D9B0',h:'#7D0C1E',line:'#C9A26B',th:'#F7F1E7'}; // bordeaux
+function palCF(c){const L=[...CF.consulenti].sort((x,y)=>String(x.cod||x.nome).localeCompare(String(y.cod||y.nome)));const i=Math.max(0,L.findIndex(x=>x.id===c.id));return PALETTES[i%PALETTES.length]}
+function repCss(p){return `body{font:13px/1.5 Arial,Helvetica,sans-serif;color:#222;max-width:820px;margin:0 auto;padding:0 0 30px;background:#fff}
+.band{background:linear-gradient(115deg,${p.a},${p.b});color:#fff;padding:26px 30px 22px;border-bottom:3px solid ${p.line}}
+.band .k{font-size:11px;letter-spacing:.22em;color:${p.acc}}.band h1{font:600 30px Georgia,serif;margin:6px 0 4px}.band h1 em{color:${p.acc}}
+.in{padding:0 30px}h2{font:600 17px Georgia,serif;color:${p.h};border-bottom:1px solid ${p.line};padding-bottom:4px;margin:24px 0 10px}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid ${p.line}55;padding:7px 9px;text-align:left}th{background:${p.th};font-weight:600}td.n{text-align:right;white-space:nowrap}
+.big{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.big div{flex:1;min-width:170px;border:1px solid ${p.line};border-radius:10px;padding:12px 14px;background:${p.th}}.big b{display:block;font:600 24px Georgia,serif;color:${p.h}}
 .ok{color:#2e7d4f;font-weight:600}.no{color:#999}li{margin:5px 0}.disc{font-size:10.5px;color:#666;border-top:1px solid #ccc;margin-top:28px;padding-top:10px}
-.pr{position:fixed;right:14px;bottom:14px;background:#7d0c1e;color:#fff;border:1px solid #C9A26B;border-radius:999px;padding:10px 16px;font:600 14px Arial}
-@media print{.pr{display:none}.band{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
+.pr{position:fixed;right:14px;bottom:14px;background:${p.h};color:#fff;border:1px solid ${p.line};border-radius:999px;padding:10px 16px;font:600 14px Arial}
+@media print{.pr{display:none}.band,.big div,th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`}
 function cfReportHTML(c){
  const R=calcCF(c),P=R.P,H=cfHints(c);
  const riga=(lab,v,f,b,evo)=>`<tr><td>${lab}</td><td class="n">${fmtK(v)}</td><td>${f?'da '+fmtK(f.da):'sotto soglia ('+fmtK(P.fasce[0].da)+')'}</td><td class="n">${f?fmtPct(rateOf(f,evo)):'–'}</td><td class="n">${eur(b)}</td></tr>`;
- return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – ${esc(c.nome)}</title><style>${REP_CSS}</style></head><body>
+ return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – ${esc(c.nome)}</title><style>${repCss(palCF(c))}</style></head><body>
  <div class="band"><div class="k">INCENTIVAZIONE 2026 · REPORT INDIVIDUALE</div><h1>${esc(c.nome)}</h1><div>${c.cod?'Cod. '+esc(c.cod)+' · ':''}${esc(c.cluster)} · dati di raccolta al ${fmtD(c.data)}</div></div><div class="in">
  <div class="big"><div><b>${eur(R.bonus)}</b>Bonus maturando</div><div><b>${fmtK(R.rn)}</b>Raccolta netta</div><div><b>${fmtK(R.revo)}</b>Raccolta evoluta</div></div>
  <h2>Bonus per pista</h2><table><tr><th>Pista</th><th>Raccolta</th><th>Fascia raggiunta</th><th>Aliquota</th><th>Bonus</th></tr>
@@ -1114,7 +1134,7 @@ ${R.m20on?`<tr><td>Raccolta evoluta ≥ raccolta netta con netta da ${fmtK(P.fas
  ${H.length?`<h2>Prossimi traguardi</h2><ul>${H.map(h=>`<li><b>${esc(h.t)}</b>: ${esc(h.d)}</li>`).join('')}</ul>`:''}
  ${c.note?`<h2>Note</h2><p>${esc(c.note).replace(/\n/g,'<br>')}</p>`:''}
  <p style="font-size:11.5px;color:#555;margin-top:18px">Metodo: ${P.metodo==='fascia'?'aliquota della fascia raggiunta applicata all\'intera raccolta della pista':'calcolo per scaglioni'}; maggiorazioni ${P.cumulo==='somma'?'sommate':'moltiplicate'}; tetto bonus ${eur(R.cap)}${c.opPart?' (con operazioni particolari)':''}. Raccolta in migliaia di euro come da regolamento.</p>
- <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div>
+ <p class="disc">${esc(disclaimer())}</p></div>
  <button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
 }
 function repBox(title,html,fname,wa){
@@ -1131,19 +1151,19 @@ function cfReport(id){const c=CF.consulenti.find(x=>x.id===id);if(!c)return;repB
 function cfTeam(){
  const L=CF.consulenti.map(c=>({c,R:calcCF(c)})).sort((a,b)=>b.R.bonus-a.R.bonus);if(!L.length){toast('Nessun consulente');return}
  const sum=k=>L.reduce((s,x)=>s+x.R[k],0);
- const html=`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – Squadra</title><style>${REP_CSS}</style></head><body>
+ const html=`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione 2026 – Squadra</title><style>${repCss(PAL_TEAM)}</style></head><body>
  <div class="band"><div class="k">INCENTIVAZIONE 2026 · RIEPILOGO DI SQUADRA</div><h1>I risultati della <em>squadra</em></h1><div>${L.length} consulenti finanziari · elaborato al ${todayIT()}</div></div><div class="in">
  <div class="big"><div><b>${eur(sum('bonus'))}</b>Bonus maturando complessivo</div><div><b>${fmtK(sum('rn'))}</b>Raccolta netta</div><div><b>${fmtK(sum('revo'))}</b>Raccolta evoluta</div></div>
  <h2>Commento</h2>${teamComment(L).map(p=>`<p>${p}</p>`).join('')}
  <h2>Dettaglio per consulente</h2><table><tr><th>#</th><th>Consulente</th><th>Raccolta netta</th><th>Raccolta evoluta</th><th>RN assicurativa</th><th>Maggior.</th><th>Bonus maturando</th><th>Scostamento dal prossimo traguardo</th></tr>
  ${L.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.c.nome)}</td><td class="n">${fmtK(x.R.rn)}</td><td class="n">${fmtK(x.R.revo)}</td><td class="n">${fmtK(x.R.ass)}</td><td>${x.R.pct?'+'+x.R.pct+'%':'–'}</td><td class="n"><b>${eur(x.R.bonus)}</b></td><td style="font-size:11.5px">${esc((cfHints(x.c)[0]||{t:'fascia massima raggiunta'}).t)}</td></tr>`).join('')}
  <tr><th colspan="2">Totale</th><th class="n">${fmtK(sum('rn'))}</th><th class="n">${fmtK(sum('revo'))}</th><th class="n">${fmtK(sum('ass'))}</th><th></th><th class="n">${eur(sum('bonus'))}</th><th></th></tr></table>
- <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div><button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
+ <p class="disc">${esc(disclaimer())}</p></div><button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
  repBox('Riepilogo di <em>squadra</em>',html,'Incentivazione_2026_squadra_'+today()+'.html');
 }
 /* ---------- Executive Manager: Piano di incentivazione 2026 (rete PW) ---------- */
 const EM_TAB=[[60,10000,10000],[85,17500,17500],[100,21000,24000],[120,23000,27000],[140,25000,35000],[160,27000,43000]];
-function emData(){CF.em=CF.em||{nome:'Massimiliano Di Luccio',data:today(),obt:{},act:{},auto:true,recl:[]};return CF.em}
+function emData(){CF.em=CF.em||{nome:'Executive Manager',data:today(),obt:{},act:{},auto:true,recl:[]};return CF.em}
 function emReady(){const e=CF&&CF.em;return !!(e&&num(e.obt.rn)>0&&num(e.obt.evo)>0)}
 function teamAgg(){const P=CF.params;let rn=0,evo=0,ass=0,aRN=0,aEVO=0;const n=CF.consulenti.length;
  for(const c of CF.consulenti){const R=calcCF(c);rn+=R.rn;evo+=R.revo;ass+=R.ass;const s0=R.P.fasce[0].da;if(R.rn>=s0)aRN++;if(R.revo>=s0)aEVO++}
@@ -1209,8 +1229,8 @@ function emReportHTML(){
  if(X.assF===1&&num(o.ass)>0&&A.ass>=0)H.push(`RN assicurativa: mancano ${fmtK(num(o.ass)-A.ass)} per l'obiettivo (+10% su netta ed evoluta)`);
  const row=(lab,ob,ac,p)=>`<tr><td>${lab}</td><td class="n">${num(ob)>0?fmtK(num(ob)):'–'}</td><td class="n">${fmtK(ac)}</td><td class="n">${pcs(p)}</td></tr>`;
  const fx=f=>`${f.ass===1?'':(f.ass>1?'+10% assicurativa':'-20% assicurativa negativa')}`;
- return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione EM 2026 – ${esc(X.e.nome)}</title><style>${REP_CSS}</style></head><body>
- <div class="band"><div class="k">PIANO DI INCENTIVAZIONE 2026 · EXECUTIVE MANAGER</div><h1>${esc(X.e.nome)}</h1><div>Rete Private &amp; Wealth · ${A.nCF} CF coordinati · dati al ${fmtD(X.e.data)}</div></div><div class="in">
+ return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incentivazione EM 2026 – Executive Manager</title><style>${repCss(PAL_EM)}</style></head><body>
+ <div class="band"><div class="k">PIANO DI INCENTIVAZIONE 2026 · EXECUTIVE MANAGER</div><h1>Bonus <em>Executive Manager</em></h1><div>Rete Private &amp; Wealth · ${A.nCF} CF coordinati · dati al ${fmtD(X.e.data)}</div></div><div class="in">
  <div class="big"><div><b>${eur(X.totale)}</b>Bonus maturando totale</div><div><b>${eur(X.bRN)}</b>Pista raccolta netta</div><div><b>${eur(X.bEVO)}</b>Pista raccolta evoluta</div>${X.bRecCap?`<div><b>${eur(X.bRecCap)}</b>Reclutamento</div>`:''}</div>
  <h2>Obiettivi e raggiungimento</h2><table><tr><th>Obiettivo</th><th>Scheda MBO</th><th>Realizzato</th><th>% raggiungimento</th></tr>
  ${row('Raccolta netta totale',o.rn,A.rn,X.pRN)}${row('RN struttura esistente',o.rnSE,A.rnSE,X.pRNse)}${row('Raccolta evoluta totale',o.evo,A.evo,X.pEVO)}${row('Evoluta struttura esistente',o.evoSE,A.evoSE,X.pEVOse)}${row('RN incentivata assicurativa',o.ass,A.ass,num(o.ass)>0?A.ass/num(o.ass)*100:null)}</table>
@@ -1224,10 +1244,10 @@ function emReportHTML(){
  <h2>Commento e scostamenti</h2>${emComment().map(p=>`<p>${p}</p>`).join('')}
  ${H.length?`<h2>Prossimi traguardi</h2><ul>${H.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}
  <p style="font-size:11.5px;color:#555;margin-top:18px">Tabella bonus 2026: 60-85% 10.000+10.000; 85-100% 17.500+17.500; 100-120% 21.000+24.000; 120-140% 23.000+27.000; 140-160% 25.000+35.000; oltre 160% 27.000+43.000 (netta+evoluta). Struttura esistente: ≥70% 100%, 50-70% 75%, 0-50% 65%, negativa 55%. Tabella A CF attivi: ≥80% 100%, 65-80% 75%, 50-65% 50%, sotto 50% 0%. La raccolta personale dell'EM non concorre. Bonus soggetto a gate d'accesso, regole di correttezza e consolidamento a maggio 2027.</p>
- <p class="disc">${esc(disclaimer())}<br><br><b>Massimiliano Di Luccio</b></p></div>
+ <p class="disc">${esc(disclaimer())}</p></div>
  <button class="pr" onclick="window.print()">Stampa o salva PDF</button></body></html>`;
 }
-function emReport(){const e=emData();repBox(`Bonus <em>EM 2026</em>`,emReportHTML(),'Incentivazione_EM_2026_'+e.nome.replace(/[^\wÀ-ÿ]+/g,'_')+'_'+today()+'.html');
+function emReport(){repBox(`Bonus <em>EM 2026</em>`,emReportHTML(),'Incentivazione_EM_2026_'+today()+'.html');
  setTimeout(()=>{const r=document.querySelector('#modal .row');if(r&&!$('#emedit2')){const b=document.createElement('button');b.className='btn';b.id='emedit2';b.textContent='Modifica dati';b.dataset.a='emedit';r.insertBefore(b,r.firstChild.nextSibling)}},0)}
 /* ---------- Commenti automatici con scostamenti ---------- */
 const sgn=v=>(v>=0?'+':'−')+eur(Math.abs(v)).replace(/^-/,'');
